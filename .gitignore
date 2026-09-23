@@ -2,3 +2,7 @@
 build
 build/*
 
+# dont track logs (lazily we are storing logs in the src directory)
+logs
+logs/*
+
