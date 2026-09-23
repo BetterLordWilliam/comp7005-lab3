@@ -4,13 +4,17 @@
 #define _BANK__TCP_PROTO "tcp"
 #define _BANK__UDP_PROTO "udp"
 
-extern const int TCP;
-extern const int UDP;
+
+enum protocol {
+    TCP,
+    UDP
+} typedef protocol_t;
+
 
 struct appmode {
-    int addr;   /** IP address (IPv4) */
-    int proto;  /** PROTOCOL TL/L4 */
-    int port;   /** intended application port */
+    protocol_t proto;   /** PROTOCOL TL/L4 */
+    int addr;           /** IP address (IPv4) */
+    int port;           /** intended application port */
 } typedef appmode_t;
 
 
