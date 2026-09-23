@@ -4,10 +4,8 @@
 #define _BANK__TCP_PROTO "tcp"
 #define _BANK__UDP_PROTO "udp"
 
-
-const unsigned int TCP = 1;
-const unsigned int UDP = 2;
-
+extern const int TCP;
+extern const int UDP;
 
 struct appmode {
     int addr;   /** IP address (IPv4) */
