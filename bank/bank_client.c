@@ -15,20 +15,15 @@ int main(int argc, char** argv)
     // initialize application mode all fields to 0
     appmode_t mode = { 0 };
 
-    printf("%s starting w/ num arguments: %d\n", MESSAGE_PREFIX, argc);
 
     // determine proto & port from program arguments
     // we need 3 arguments to this program
     // be strict, reject more or less
 
-    if (argc != 3)
+    if (argc != 3) {
+        printf("%s incorrect number of arguments\n", MESSAGE_PREFIX);
         goto error;
-
-    // printf("%s arg0: %s\n", MESSAGE_PREFIX, argv[0]);
-    // printf("%s arg1: %s\n", MESSAGE_PREFIX, argv[1]);
-    // printf("%s arg2: %s\n", MESSAGE_PREFIX, argv[2]);
-
-
+    }
     // arg1 protocol type
     if (strcmp(_BANK__TCP_PROTO, argv[1]) == 0 ) {
         mode.proto = TCP;
@@ -40,12 +35,12 @@ int main(int argc, char** argv)
         printf("%s unknown protocol\n", MESSAGE_PREFIX);
         goto error;
     }
-
     // arg2 port process to short?
     if ((pport = atoi(argv[2])) != 0)  {
         mode.port = (short)pport;
     } else {
         printf("%s failed to parse port to integer\n", MESSAGE_PREFIX);
+        goto error;
     }
     
     
