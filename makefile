@@ -1,26 +1,33 @@
 .RECIPEPREFIX = >
 .DEFAULT_GOAL = build
 
-LOGS            = ./logs
-SERVER_IN       = ./logs/server-stdin
-SERVER_OUT      = ./logs/server-stdout
-SERVER_ERR      = ./logs/server-stderr
-CLIENT_IN       = ./logs/client-stdin       # delivering the commands
-CLIENT_OUT      = ./logs/client-stdout
-CLIENT_ERR      = ./logs/client-err
+LOGS        = ./logs
+SERVER_IN   = ./logs/server-stdin
+SERVER_OUT  = ./logs/server-stdout
+SERVER_ERR  = ./logs/server-stderr
+CLIENT_IN   = ./logs/client-stdin       # delivering the commands
+CLIENT_OUT  = ./logs/client-stdout
+CLIENT_ERR  = ./logs/client-err
 
 BUILD           = ./build
 BANK_SERVER_SRC = ./bank/bank_server.c
 BANK_CLIENT_SRC = ./bank/bank_client.c
+BANK_COMMON_SRC = ./bank/common.c
+
+BANK_COMMON_LIB = $(BUILD)/common.so
 
 
-build-server: $(BANK_SERVER_SRC)
+$(BANK_COMMON_LIB): $(BANK_COMMON_SRC)
 > mkdir -p $(BUILD)
-> gcc -o $(BUILD)/bank-server $(BANK_SERVER_SRC)
+> gcc -shared -fPIC $(BANK_COMMON_SRC) -o $(BANK_COMMON_LIB)
 
-build-client: $(BANK_CLIENT_SRC)
+build-server: $(BANK_SERVER_SRC) $(BANK_COMMON_LIB)
 > mkdir -p $(BUILD)
-> gcc -o $(BUILD)/bank-client $(BANK_CLIENT_SRC)
+> gcc -o $(BUILD)/bank-server $(BANK_COMMON_LIB) $(BANK_SERVER_SRC) -L$(BUILD) -Wl,-rpath,''$$ORIGIN
+
+build-client: $(BANK_CLIENT_SRC) $(COMMON_LIB)
+> mkdir -p $(BUILD)
+> gcc -o $(BUILD)/bank-client $(BANK_COMMON_LIB) $(BANK_CLIENT_SRC) -L$(BUILD) -Wl,-rpath,'$$ORIGIN'
 
 build: build-server build-client
 
