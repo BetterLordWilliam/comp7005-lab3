@@ -1,1 +1,4 @@
+# dont track built stuff
+build
+build/*
 
