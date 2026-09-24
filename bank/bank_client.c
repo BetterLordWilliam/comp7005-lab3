@@ -68,29 +68,38 @@ int main(int argc, char** argv)
     rbuf = (char*)calloc(BUF_SIZE, sizeof(char));
     wbuf = (char*)calloc(BUF_SIZE, sizeof(char));
 
+
+    // STEP 1
+    // protocol specifici socket setup
     switch (mode.proto) {
         case TCP:
             // create TCP socket
             if (getsockfd_tcp(&sockfd) > 0)
                 goto error;
+            setsockaddr_lb(&saddr, mode.port); // sockaddr -> lb:port
             break;
 
         case UDP:
             // create UDP socket
             if (getsockfd_udp(&sockfd) > 0)
                 goto error;
+            setsockaddr_lb(&saddr, mode.port); // sockaddr -> lb:port
             break;
 
         default:
             goto error; // should be an impossibility to get here
     }
-
-
-    setsockaddr_lb(&saddr, mode.port); // sockaddr -> lb:port
+    
+    // STEP 2 
+    // connect, this is actually the same regardless of TCP/UDP (for now)
+    // even though UDP is connectionless
     connectr = connect(sockfd, (struct sockaddr*)&saddr, sizeof(saddr));
     if (connectr < 0)
         goto error;
 
+    // STEP 3
+    // client loop begins, except we at the client level are waiting for new
+    // messages from stdin
     pfd.fd      = STDIN_FILENO; // stdin because we are waiting for user input (which is the message)
     pfd.events  = POLLIN;
     pfd.revents = 0;
