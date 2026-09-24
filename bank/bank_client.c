@@ -2,19 +2,31 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <poll.h>
 #include <sys/socket.h>
+#include <netinet/ip.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 
 #include "common.h"
 
 
 #define MESSAGE_PREFIX "[CLIENT]"
 
+
 int main(int argc, char** argv)
 {
     int pport;
+    int sockfd;
+    int connectr;
+    int pollr;
 
     // initialize application mode all fields to 0
     appmode_t mode = { 0 };
+
+    struct sockaddr_in saddr = { 0 };
+    struct pollfd pfd = { 0 };
 
 
     // determine proto & port from program arguments
@@ -47,6 +59,44 @@ int main(int argc, char** argv)
     
     // sanity check
     print_appmode(&mode);
+
+
+    switch (mode.proto) {
+        case TCP:
+            // create socket
+            if (getsockfd_tcp(&sockfd) > 0)
+                goto error;
+            setsockaddr_lb(&saddr, mode.port); // sockaddr -> lb:port
+
+            // skip binding w/ the client
+            // printf("%d, %hd\n", saddr.sin_addr.s_addr, saddr.sin_port);
+            // if (bindsock(sockfd, (struct sockaddr*)&saddr, sizeof(saddr)))
+            //    goto error;
+            // printf("bind successful\n");
+
+            connectr = connect(sockfd, (struct sockaddr*)&saddr, sizeof(saddr));
+            if (connectr < 0)
+                goto error;
+
+            pfd.fd      = sockfd;
+            pfd.events  = POLLIN;
+            pfd.revents = 0;
+            
+            printf("connection to server established entering poll loop.\n");
+ 
+            while (1) {
+                pollr = poll(&pfd, 1, -1);
+                break;
+            }
+
+            break;
+
+        case UDP:
+            break;
+
+        default:
+            goto error;
+    }
 
 
     return 0;

@@ -92,7 +92,7 @@ int main(int argc, char** argv)
             pfd.events  = POLLIN;
             pfd.revents = 0;
             
-            printf("connection established entering poll loop.");
+            printf("connection to client established entering poll loop.\n");
  
             while (1) {
                 pollr = poll(&pfd, 1, -1);
