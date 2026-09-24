@@ -25,11 +25,14 @@ int test_port(int port)
 
 int setsockaddr_lb(struct sockaddr_in* addr, int port)
 {
-    addr->sin_family    = AF_INET;
-    addr->sin_port      = port;
+    addr->sin_family        = AF_INET;
+    addr->sin_port          = port;
+    addr->sin_addr.s_addr   = htonl(_BANK__LOOPBACK_DEC);
+    
+    // printf("%d\n", _BANK__LOOPBACK_BIN);
 
-    if (inet_pton(AF_INET, _BANK__LOOPBACK_STR, &addr->sin_addr) != 1)
-        return 1;
+    // if (inet_pton(AF_INET, _BANK__LOOPBACK_STR, &addr->sin_addr) != 1)
+    //    return 1;
 
     return 0;
 }
