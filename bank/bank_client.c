@@ -92,6 +92,33 @@ int main(int argc, char** argv)
             break;
 
         case UDP:
+            // create socket
+            if (getsockfd_udp(&sockfd) > 0)
+                goto error;
+            setsockaddr_lb(&saddr, mode.port); // sockaddr -> lb:port
+
+            // skip binding w/ the client
+            // printf("%d, %hd\n", saddr.sin_addr.s_addr, saddr.sin_port);
+            // if (bindsock(sockfd, (struct sockaddr*)&saddr, sizeof(saddr)))
+            //    goto error;
+            // printf("bind successful\n");
+
+            connectr = connect(sockfd, (struct sockaddr*)&saddr, sizeof(saddr));
+            if (connectr < 0)
+                goto error;
+
+            pfd.fd      = sockfd;
+            pfd.events  = POLLIN;
+            pfd.revents = 0;
+            
+            printf("connection to server established entering poll loop.\n");
+ 
+            while (1) { // do I need to do this?
+                pollr = poll(&pfd, 1, -1); // yes poll (block process while there's nothing to do)
+                // recvfrom
+                break;
+            }
+
             break;
 
         default:

@@ -12,6 +12,9 @@
 
 #define MESSAGE_PREFIX "[SERVER]"
 
+// https://www.geeksforgeeks.org/computer-networks/simple-client-server-application-in-c/
+// https://www.geeksforgeeks.org/computer-networks/udp-client-server-using-connect-c-implementation/
+
 
 int main(int argc, char** argv)
 {
@@ -96,6 +99,7 @@ int main(int argc, char** argv)
  
             while (1) {
                 pollr = poll(&pfd, 1, -1);
+                printf("received some message");
                 break;
             }
 
@@ -118,8 +122,16 @@ int main(int argc, char** argv)
             // no need to listen & accept connections for UDP
             // we can immediately jump to the `poll` loop &, for now, echo
             // incoming messages
+            
+            pfd.fd      = sockfd;
+            pfd.events  = POLLIN;
+            pfd.revents = 0;
 
-            while (1) {
+            printf("waiting for incoming messages entering poll loop\n");
+
+            while (1) { // do I need to do this?
+                pollr = poll(&pfd, 1, -1); // yes
+                printf("received some message\n");
                 break;
             }
 
