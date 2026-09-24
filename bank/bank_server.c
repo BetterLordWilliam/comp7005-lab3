@@ -21,6 +21,7 @@ int main(int argc, char** argv)
     int pport;
     int sockfd;
     int sockconfd;
+    int pollablefd;
     int listenr;
     int acceptr;
     int pollr;
@@ -64,7 +65,6 @@ int main(int argc, char** argv)
     // protocol dependent socket setup
 
     switch (mode.proto) {
-
         case TCP:
             // create socket
             if (getsockfd_tcp(&sockfd) > 0)
@@ -84,26 +84,8 @@ int main(int argc, char** argv)
             acceptr = accept(sockfd, NULL, NULL); // block me until connection is made, returns new connection fd
             if (listen < 0)
                 goto error;         // poor error handling need to improve
-            
-            // after a connection is made, unblock & enter a `poll` loop
-            // will also need to create some buffer to write messages to
-            // probably just one that is 256 bytes is enough as we have limited
-            // message lexicon
-            // for now, echo incoming messages
-
-            pfd.fd      = acceptr;
-            pfd.events  = POLLIN;
-            pfd.revents = 0;
-            
-            printf("connection to client established entering poll loop.\n");
- 
-            while (1) {
-                pollr = poll(&pfd, 1, -1);
-                
-                // handle poll stuff
-
-                break;
-            }
+           
+            pollablefd = acceptr;
 
             break;
 
@@ -117,27 +99,8 @@ int main(int argc, char** argv)
             // printf("%d, %hd\n", saddr.sin_addr.s_addr, saddr.sin_port);
             if (bindsock(sockfd, (struct sockaddr*)&saddr, sizeof(saddr)))
                 goto error;
-            // printf("bind successful\n");
 
-            // PROTO SPECIFIC SERVER LOOP
-            
-            // no need to listen & accept connections for UDP
-            // we can immediately jump to the `poll` loop &, for now, echo
-            // incoming messages
-            
-            pfd.fd      = sockfd;
-            pfd.events  = POLLIN;
-            pfd.revents = 0;
-
-            printf("waiting for incoming messages entering poll loop\n");
-
-            while (1) {
-                pollr = poll(&pfd, 1, -1);
-
-                // handle poll stuff
-
-                break;
-            }
+            pollablefd = sockfd;
 
             break;
 
@@ -145,6 +108,22 @@ int main(int argc, char** argv)
             goto error; // should be an impossibility to get here
     }
 
+    // STEP 3
+    // Server loop wait for the socket fd (either socket FD directly or
+    // specific connection fd, depends on the protocol for data)
+    // 
+
+    pfd.fd      = pollablefd;
+    pfd.events  = POLLIN;
+    pfd.revents = 0;
+
+    while (1) {
+        pollr = poll(&pfd, 1, -1);
+
+        // handle poll stuff
+
+        break;
+    }
 
     return 0;
 
