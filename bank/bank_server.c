@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/socket.h>
+#include <netinet/ip.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "common.h"
 
@@ -10,12 +14,13 @@
 
 int main(int argc, char** argv)
 {
-    int pport;
-
-    // initialize application mode all fields to 0
+    int pport, sockfd;
     appmode_t mode = { 0 };
+    struct sockaddr_in saddr = { 0 };
 
 
+    // STEP 1
+    // parse arguments
     // determine proto & port from program arguments
     // we need 3 arguments to this program
     // be strict, reject more or less
@@ -41,10 +46,42 @@ int main(int argc, char** argv)
         goto error;
     }
     
-    
-    // sanity check
-    print_appmode(&mode);
+    // print_appmode(&mode);
 
+
+    // STEP 2
+    // protocol dependent socket setup
+
+    switch (mode.proto) {
+        case TCP:
+            // create socket
+            if (getsockfd_tcp(&sockfd) > 0)
+                goto error;
+            // printf("%d\n", sockfd);
+            // bind socket
+            // saddr.sin_family = AF_INET;
+            // saddr.sin_port   = mode.port;
+            // if (inet_pton(AF_INET, "127.0.0.1", &saddr.sin_addr) != 1)
+            //    goto error;
+            if (setsockaddr_lb(&saddr, mode.port) > 0)
+                goto error;
+            printf("%d, %hd\n", saddr.sin_addr.s_addr, saddr.sin_port);
+
+            break;
+        case UDP:
+            // create socket
+            if (getsockfd_udp(&sockfd) > 0)
+                goto error;
+            // printf("%d\n", sockfd);
+            // bind socket
+
+            break;
+        default:
+            goto error;
+    }
+
+
+    return 0;
 
 error:
     printf("error running server program exiting\n");

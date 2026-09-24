@@ -1,8 +1,18 @@
 #ifndef _BANK__COMMON
 #define _BANK__COMMON
 
-#define _BANK__TCP_PROTO "tcp"
-#define _BANK__UDP_PROTO "udp"
+#include <sys/socket.h>
+#include <netinet/ip.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+
+#define _BANK__TCP_PROTO    "tcp"
+#define _BANK__UDP_PROTO    "udp"
+
+#define _BANK__LOOPBACK_STR "127.0.0.1"
+#define _BANK__LOOPBACK_BIN (0b01111111000000000000000000000001)
+#define _BANK__LOOPBACK_DEC ()
 
 #define _BANK__PORT_MIN (1024)
 #define _BANK__PORT_MAX (65535)
@@ -33,6 +43,15 @@ validates a port
     returns 1 if true   (port is valid)
 */
 int test_port(int port);
+
+/**
+sets sockaddr_in struct fields & assigns address as loopback address.
+    uses `inet_pton`
+*/
+int setsockaddr_lb(struct sockaddr_in* addr, int port);
+
+int getsockfd_tcp(int* fd);
+int getsockfd_udp(int* fd);
 
 #endif
 
