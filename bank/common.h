@@ -10,9 +10,10 @@
 #define _BANK__TCP_PROTO    "tcp"
 #define _BANK__UDP_PROTO    "udp"
 
-#define _BANK__LOOPBACK_STR "127.0.0.1"
-#define _BANK__LOOPBACK_BIN (0b01111111000000000000000000000001)
-#define _BANK__LOOPBACK_DEC (2130706433)
+// [WO] just use the <arpa/inet.h> definitions
+// #define _BANK__LOOPBACK_STR "127.0.0.1"
+// #define _BANK__LOOPBACK_BIN (0b01111111000000000000000000000001)
+// #define _BANK__LOOPBACK_DEC (2130706433)
 
 #define _BANK__PORT_MIN (1024)
 #define _BANK__PORT_MAX (65535)
