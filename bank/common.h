@@ -54,5 +54,13 @@ void setsockaddr_lb(struct sockaddr_in* addr, int port);
 int getsockfd_tcp(int* fd);
 int getsockfd_udp(int* fd);
 
+/**
+safely handles the bind syscall
+    by safely I really just mean it will retry if the reported `errno` is EINTR
+    0 is returned if `bind` returns 0
+    & 1 is returned if a value < 0 is returned by `bind`
+*/
+int bindsock(int fd, struct sockaddr* sockaddr, socklen_t addrlen);
+
 #endif
 

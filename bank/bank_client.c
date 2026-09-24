@@ -38,7 +38,7 @@ int main(int argc, char** argv)
     }
     // arg2 port process to short?
     if ((pport = atoi(argv[2])) != 0 && test_port(pport))  {
-        mode.port = (short)pport;
+        mode.port = htons(pport);
     } else {
         printf("%s failed to parse port to integer\n", MESSAGE_PREFIX);
         goto error;

@@ -69,3 +69,17 @@ int getsockfd_udp(int* fd)
 }
 
 
+int bindsock(int fd, struct sockaddr* sockaddr, socklen_t addrlen)
+{
+    int t;
+    while (1) {
+        t = bind(fd, sockaddr, addrlen);
+        if (t == 0)
+            break;
+        if (t < 0 && errno == EINTR)
+            continue;
+        return 1;
+    }
+    return 0;
+}
+
