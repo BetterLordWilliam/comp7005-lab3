@@ -57,7 +57,7 @@ int main(int argc, char** argv)
         goto error;
     }
     
-    // print_appmode(&mode);
+    print_appmode(&mode);
 
 
     // STEP 2
