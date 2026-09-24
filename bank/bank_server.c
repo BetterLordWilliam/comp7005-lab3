@@ -57,14 +57,7 @@ int main(int argc, char** argv)
             // create socket
             if (getsockfd_tcp(&sockfd) > 0)
                 goto error;
-            // printf("%d\n", sockfd);
-            // bind socket
-            // saddr.sin_family = AF_INET;
-            // saddr.sin_port   = mode.port;
-            // if (inet_pton(AF_INET, "127.0.0.1", &saddr.sin_addr) != 1)
-            //    goto error;
-            if (setsockaddr_lb(&saddr, mode.port) > 0)
-                goto error;
+            setsockaddr_lb(&saddr, mode.port); // sockaddr -> lb:port
             printf("%d, %hd\n", saddr.sin_addr.s_addr, saddr.sin_port);
 
             break;
@@ -74,6 +67,8 @@ int main(int argc, char** argv)
                 goto error;
             // printf("%d\n", sockfd);
             // bind socket
+            setsockaddr_lb(&saddr, mode.port); // sockaddr -> lb:port
+            printf("%d, %hd\n", saddr.sin_addr.s_addr, saddr.sin_port);
 
             break;
         default:

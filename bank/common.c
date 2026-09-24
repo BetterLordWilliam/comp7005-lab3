@@ -23,19 +23,14 @@ int test_port(int port)
 }
 
 
-int setsockaddr_lb(struct sockaddr_in* addr, int port)
+void setsockaddr_lb(struct sockaddr_in* addr, int port)
 {
     addr->sin_family        = AF_INET;
     addr->sin_port          = port;
-    // addr->sin_addr.s_addr   = htonl(_BANK__LOOPBACK_DEC); // address in host-specific byte ordering
-    addr->sin_addr.s_addr   = htonl(INADDR_LOOPBACK);
+    addr->sin_addr.s_addr   = htonl(INADDR_LOOPBACK); // host to network byte-ordering
     
-    // printf("%d\n", _BANK__LOOPBACK_BIN);
-
     // if (inet_pton(AF_INET, _BANK__LOOPBACK_STR, &addr->sin_addr) != 1)
     //    return 1;
-
-    return 0;
 }
 
 

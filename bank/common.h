@@ -49,7 +49,7 @@ int test_port(int port);
 sets sockaddr_in struct fields & assigns address as loopback address.
     uses `inet_pton`
 */
-int setsockaddr_lb(struct sockaddr_in* addr, int port);
+void setsockaddr_lb(struct sockaddr_in* addr, int port);
 
 int getsockfd_tcp(int* fd);
 int getsockfd_udp(int* fd);
