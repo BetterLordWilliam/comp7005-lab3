@@ -99,7 +99,9 @@ int main(int argc, char** argv)
  
             while (1) {
                 pollr = poll(&pfd, 1, -1);
-                printf("received some message");
+                
+                // handle poll stuff
+
                 break;
             }
 
@@ -129,9 +131,11 @@ int main(int argc, char** argv)
 
             printf("waiting for incoming messages entering poll loop\n");
 
-            while (1) { // do I need to do this?
-                pollr = poll(&pfd, 1, -1); // yes
-                printf("received some message\n");
+            while (1) {
+                pollr = poll(&pfd, 1, -1);
+
+                // handle poll stuff
+
                 break;
             }
 
