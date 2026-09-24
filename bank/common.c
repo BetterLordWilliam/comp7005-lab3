@@ -27,7 +27,8 @@ int setsockaddr_lb(struct sockaddr_in* addr, int port)
 {
     addr->sin_family        = AF_INET;
     addr->sin_port          = port;
-    addr->sin_addr.s_addr   = htonl(_BANK__LOOPBACK_DEC);
+    // addr->sin_addr.s_addr   = htonl(_BANK__LOOPBACK_DEC); // address in host-specific byte ordering
+    addr->sin_addr.s_addr   = htonl(INADDR_LOOPBACK);
     
     // printf("%d\n", _BANK__LOOPBACK_BIN);
 
