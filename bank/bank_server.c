@@ -21,25 +21,42 @@ Takes message from the client & processes the request
 */
 int bank_processing(bank_t* bank, const char* request, char* response) {
     printf("%s\n", request);
+    int t;
 
     if (strncmp(_BANK__BALANCE_MSG_PREFIX,
-            request, strlen(_BANK__BALANCE_MSG_PREFIX)) == 0)
+            request, strlen(_BANK__BALANCE_MSG_PREFIX)) == 0) {
         printf("balance request incoming\n");
 
-    else if (strncmp(_BANK__DEPOSIT_MSG_PREFIX,
-            request, strlen(_BANK__DEPOSIT_MSG_PREFIX)) == 0)
+    } else if (strncmp(_BANK__DEPOSIT_MSG_PREFIX,
+            request, strlen(_BANK__DEPOSIT_MSG_PREFIX)) == 0) {
         printf("deposit message incoming\n");
+        // bytes after prefix length until '\n' or '\0' are to be parsed as an integer
+        sscanf(request, _BANK__DEPOSIT_MSG_PREFIX "  %d", &t);
+        printf("you are despositing: %d\n", t);
+        
+        bank->balance += t;
 
-    else if (strncmp(_BANK__WITHDRAW_MSG_PREFIX,
-            request, strlen(_BANK__WITHDRAW_MSG_PREFIX)) == 0)
+    } else if (strncmp(_BANK__WITHDRAW_MSG_PREFIX,
+            request, strlen(_BANK__WITHDRAW_MSG_PREFIX)) == 0) {
         printf("withdraw message incoming\n");
+        // bytes after prefix length until '\n' or '\0' are to be parsed as an integer
+        sscanf(request, _BANK__WITHDRAW_MSG_PREFIX " %d", &t);
+        printf("you are withdrawinug: %d\n", t);
 
-    else if (strncmp(_BANK__QUIT_MSG,
-            request, strlen(_BANK__QUIT_MSG)) == 0)
+        // cannot withdraw if the amount withdrawing is greater than the amount
+        // in the bank, so just do nothing
+        if (t < bank->balance)
+            bank->balance -= t;
+
+    } else if (strncmp(_BANK__QUIT_MSG,
+            request, strlen(_BANK__QUIT_MSG)) == 0) {
         printf("quit message incoming\n");
 
-    else
+    } else {
         printf("unknown message type received\n");
+    }
+
+    printf("bank balance: %d\n", bank->balance);
 
     return 0; 
 }
