@@ -119,10 +119,8 @@ int main(int argc, char** argv)
             // invalid value means error exit
             if (pfd.revents & ( POLLNVAL | POLLERR | POLLHUP )) {
                 goto error; 
-            } else if (pfd.revents & ( POLLIN )) {
-                printf("something!\n");
 
-                // protocol dependent stuff will happen in here again
+            } else if (pfd.revents & ( POLLIN )) {
                 readr = read(pfd.fd, rbuf, BUF_SIZE);
                 if (readr < 0)
                     continue; // failed to read for this command
@@ -130,15 +128,20 @@ int main(int argc, char** argv)
                     break;
                 }
                 rbuf[readr] = '\0';
+
+                // protocol dependent stuff will happen in here again
                 // printf("you typed this command: %s\n", rbuf);
                 sendr = send(sockfd, rbuf, BUF_SIZE, 0);
-                printf("%d\n", sendr);
+                // printf("%d\n", sendr);
+                recvr = recv(sockfd, wbuf, BUF_SIZE, 0);
+                printf("%s\n", wbuf); // reply from the server
             }
 
         } else {
             printf("error with poll\n");
             goto error;
         } // don't have to handle timeout because timeout is infinite
+
         printf("uh oh\n");
 
     } while (1);

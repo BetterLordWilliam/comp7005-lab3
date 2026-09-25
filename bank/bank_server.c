@@ -15,9 +15,6 @@
 
 #define BUF_SIZE (256)
 
-// https://www.geeksforgeeks.org/computer-networks/simple-client-server-application-in-c/
-// https://www.geeksforgeeks.org/computer-networks/udp-client-server-using-connect-c-implementation/
-
 
 int main(int argc, char** argv)
 {
@@ -29,14 +26,18 @@ int main(int argc, char** argv)
     int acceptr;
     int pollr;
     int readr;
+    int sendr;
 
     char* rbuf;
     char* wbuf;
 
     appmode_t mode = { 0 };
+
     struct sockaddr_in saddr = { 0 };
     struct sockaddr_in caddr = { 0 };
+
     socklen_t caddr_len;
+
     struct pollfd pfd = { 0 };
 
     rbuf = (char*)calloc(BUF_SIZE, sizeof(char));
@@ -136,6 +137,7 @@ int main(int argc, char** argv)
         if (pollr > 0) {
             if (pfd.revents & ( POLLNVAL | POLLERR | POLLHUP ))  {
                 goto error;
+
             } else {
                 // must be done in a protocol specific fashion
                 // `recv` is fine for TCP
@@ -143,26 +145,37 @@ int main(int argc, char** argv)
                 // unless I get it from incoming message for later `sendto`
                 switch (mode.proto) {
                     case TCP:
-                        readr = recv(pollablefd, rbuf, BUF_SIZE, 0);
+                        readr = recv(pollablefd, rbuf, BUF_SIZE, 0);    // PROPER ERROR HANDLING
                         break;
                     case UDP:
                         readr = recvfrom(pollablefd, rbuf, BUF_SIZE, 0,
-                            (struct sockaddr*)&caddr, &caddr_len);
+                            (struct sockaddr*)&caddr, &caddr_len);      // PROPER ERROR HANDLING
+                        // printf("RECVFROM: %d\n", readr);
+                        printf("PEER ADDR STUFF: %d, %d, %d\n", caddr.sin_addr.s_addr, caddr.sin_port, caddr_len);
                         break;
                 }
+
+                // read into a buffer & then parse (generic actions)
+                rbuf[readr] = '\0';
+                printf("%s\n", rbuf);
+
+                // protocol specific reply (then continue listening)
+                // switch (mode.proto) {
+                //    case TCP:
+                //        sendr = send(pollablefd, "reply", 5, 0);  // PROPER ERROR HANDLING
+                //        break;
+                //    case UDP:
+                //        sendr = sendto(pollablefd, "reply", 5, 0,
+                //            (struct sockaddr*)&caddr, caddr_len); // PROPER ERROR HANDLING
+                //        break;
+                // }
             }
-
-            rbuf[readr] = '\0';
-
-            // read into a buffer & then parse (generic actions)
-            printf("%s\n", rbuf);
-
-            // protocol specific reply (then continue listening)
 
         } else {
             printf("error with poll\n");
             goto error;
         } // don't have to handle timeout because timeout is infinite
+
         printf("uh oh\n");
 
     } while (1);
