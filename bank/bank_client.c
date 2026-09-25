@@ -110,13 +110,25 @@ int main(int argc, char** argv)
         pollr = poll(&pfd, 1, -1); // poll on stdin (messages)
         
         if (pollr > 0) {
-            printf("user entered message\n");
+            // printf("user entered message\n");
 
             // figure out what the revent is from `poll` & act accordingly
+            // invalid value means error exit
+            if (pfd.revents & ( POLLNVAL | POLLERR | POLLHUP )) {
+                goto error; 
+            } else if (pfd.revents & ( POLLIN )) {
+                printf("something!\n");
 
-            readr = read(pfd.fd, rbuf, BUF_SIZE);
-
-            // protocol dependent stuff will happen in here again
+                // protocol dependent stuff will happen in here again
+                readr = read(pfd.fd, rbuf, BUF_SIZE);
+                if (readr < 0)
+                    continue; // failed to read for this command
+                if (readr == 0) {
+                    break;
+                }
+                rbuf[readr] = '\0';
+                printf("you typed this command: %s\n", rbuf);
+            }
 
         } else if (pollr < 0) {
             printf("error with poll\n");
@@ -125,9 +137,9 @@ int main(int argc, char** argv)
         } else {
             // should never get here because there is infinite timeout
         }
-
-        break;
     }
+
+    printf("client program terminating\n");
 
     free(rbuf);
     free(wbuf);

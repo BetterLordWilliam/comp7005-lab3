@@ -79,7 +79,7 @@ int main(int argc, char** argv)
             listenr = listen(sockfd, 1); // mark socket as passive, 1 connection in queue (double check requirements)
             if (listenr != 0)
                 goto error;         // poor error handling need to improve
-            printf("listening\n");
+            // printf("listening\n");
             
             acceptr = accept(sockfd, NULL, NULL); // block me until connection is made, returns new connection fd
             if (listen < 0)
