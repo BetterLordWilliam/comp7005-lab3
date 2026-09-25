@@ -15,8 +15,6 @@
 
 #define MESSAGE_PREFIX "[CLIENT]"
 
-#define BUF_SIZE (256)
-
 
 int main(int argc, char** argv)
 {
@@ -28,8 +26,8 @@ int main(int argc, char** argv)
     int sendr;
     int recvr;
 
-    char* rbuf = (char*)calloc(BUF_SIZE, sizeof(char));
-    char* wbuf = (char*)calloc(BUF_SIZE, sizeof(char));
+    char* rbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
+    char* wbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
 
     // initialize application mode all fields to 0
     appmode_t mode = { 0 };
@@ -114,7 +112,7 @@ int main(int argc, char** argv)
                 goto error; 
 
             } else if (pfd.revents & ( POLLIN )) {
-                readr = read(pfd.fd, rbuf, BUF_SIZE);
+                readr = read(pfd.fd, rbuf, _BANK__BUF_SIZE);
                 if (readr < 0)
                     continue; // failed to read for this command
                 if (readr == 0) {
@@ -131,9 +129,9 @@ int main(int argc, char** argv)
                 // to be used.
                 // maybe I dont need to seperate?
 
-                sendr = send(sockfd, rbuf, BUF_SIZE, 0);
+                sendr = send(sockfd, rbuf, _BANK__BUF_SIZE, 0);
                 // printf("%d\n", sendr);
-                recvr = recv(sockfd, wbuf, BUF_SIZE, 0);
+                recvr = recv(sockfd, wbuf, _BANK__BUF_SIZE, 0);
                 printf("%s\n", wbuf); // reply from the server
             }
 

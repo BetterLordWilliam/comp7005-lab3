@@ -13,7 +13,36 @@
 
 #define MESSAGE_PREFIX "[SERVER]"
 
-#define BUF_SIZE (256)
+
+/**
+Takes message from the client & processes the request
+    bank_t* bank pointer to bank struct (bank state)
+    char* request
+*/
+int bank_processing(bank_t* bank, const char* request, char* response) {
+    printf("%s\n", request);
+
+    if (strncmp(_BANK__BALANCE_MSG_PREFIX,
+            request, strlen(_BANK__BALANCE_MSG_PREFIX)) == 0)
+        printf("balance request incoming\n");
+
+    else if (strncmp(_BANK__DEPOSIT_MSG_PREFIX,
+            request, strlen(_BANK__DEPOSIT_MSG_PREFIX)) == 0)
+        printf("deposit message incoming\n");
+
+    else if (strncmp(_BANK__WITHDRAW_MSG_PREFIX,
+            request, strlen(_BANK__WITHDRAW_MSG_PREFIX)) == 0)
+        printf("withdraw message incoming\n");
+
+    else if (strncmp(_BANK__QUIT_MSG,
+            request, strlen(_BANK__QUIT_MSG)) == 0)
+        printf("quit message incoming\n");
+
+    else
+        printf("unknown message type received\n");
+
+    return 0; 
+}
 
 
 enum ret_bankserver {
@@ -24,7 +53,7 @@ enum ret_bankserver {
 
 /**
 */
-int bank_server_tcp(appmode_t* am)
+int bank_server_tcp(appmode_t* am, bank_t* bank)
 {
     int sockfd;
     int consockfd;
@@ -37,7 +66,8 @@ int bank_server_tcp(appmode_t* am)
     struct sockaddr_in saddr    = { 0 };
     struct pollfd pfd           = { 0 };
 
-    char* rbuf = (char*)calloc(BUF_SIZE, sizeof(char));
+    char* rbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
+    char* wbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
 
     // 1 socket setup
     if (getsockfd_tcp(&sockfd) > 0)
@@ -66,7 +96,7 @@ int bank_server_tcp(appmode_t* am)
             if (pfd.revents & ( POLLNVAL | POLLERR | POLLHUP ))  {
                 goto error;
             } else {
-                readr = recv(pfd.fd, rbuf, BUF_SIZE, 0);    // PROPER ERROR HANDLING
+                readr = recv(pfd.fd, rbuf, _BANK__BUF_SIZE, 0);    // PROPER ERROR HANDLING
 
                 // read into a buffer & then parse (generic actions)
                 rbuf[readr] = '\0';
@@ -74,6 +104,7 @@ int bank_server_tcp(appmode_t* am)
                 
                 // app logic (common)
                 // should & will be its own function
+                bank_processing(bank, rbuf, wbuf);
 
                 // send the reply
                 sendr = send(pfd.fd, "reply", 5, 0);  // PROPER ERROR HANDLING
@@ -90,22 +121,24 @@ int bank_server_tcp(appmode_t* am)
     printf("server program terminating\n");
 
     close(sockfd);
-
     free(rbuf);
+    free(wbuf);
 
     return BANKSERV_OK;
 
 error:
-    close(sockfd);
+    printf("there was an error running the server quitting server event loop\n");
 
+    close(sockfd);
     free(rbuf);
+    free(wbuf);
 
     return BANKSERV_ERR;
 }
 
 /**
 */
-int bank_server_udp(appmode_t* am)
+int bank_server_udp(appmode_t* am, bank_t* bank)
 {
     int sockfd;
     int consockfd;
@@ -121,7 +154,8 @@ int bank_server_udp(appmode_t* am)
 
     socklen_t caddr_len = sizeof(caddr);
 
-    char* rbuf = (char*)calloc(BUF_SIZE, sizeof(char));
+    char* rbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
+    char* wbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
 
     // 1 socket setup
     if (getsockfd_udp(&sockfd) > 0)
@@ -146,7 +180,7 @@ int bank_server_udp(appmode_t* am)
                 goto error;
 
             } else {
-                readr = recvfrom(sockfd, rbuf, BUF_SIZE, 0,
+                readr = recvfrom(sockfd, rbuf, _BANK__BUF_SIZE, 0,
                     (struct sockaddr*)&caddr, &caddr_len);      // PROPER ERROR HANDLING
                 // printf("RECVFROM: %d\n", readr);
                 printf("PEER ADDR STUFF: %d, %d, %d\n", caddr.sin_addr.s_addr, caddr.sin_port, caddr_len);
@@ -154,6 +188,9 @@ int bank_server_udp(appmode_t* am)
                 // read into a buffer & then parse (generic actions)
                 rbuf[readr] = '\0';
                 printf("%s\n", rbuf);
+
+                // protocol agnostic message processing
+                bank_processing(bank, rbuf, wbuf);
 
                 sendr = sendto(sockfd, "reply", 5, 0,
                     (struct sockaddr*)&caddr, caddr_len); // PROPER ERROR HANDLING
@@ -172,12 +209,16 @@ int bank_server_udp(appmode_t* am)
     
     close(sockfd);
     free(rbuf);
+    free(wbuf);
 
     return BANKSERV_OK;
 
 error:
+    printf("there was an error running the server quitting server event loop\n");
+
     close(sockfd);
     free(rbuf);
+    free(wbuf);
 
     return BANKSERV_ERR;
 }
@@ -187,6 +228,9 @@ int main(int argc, char** argv)
 {
     int pport;
     appmode_t mode = { 0 };
+    bank_t bank = { 0 };
+
+    bank.balance = 1000;    // set the initial balance as $1000
 
     // parse arguments
     // determine proto & port from program arguments
@@ -219,11 +263,11 @@ int main(int argc, char** argv)
 
     switch (mode.proto) {
         case TCP:
-            if (bank_server_tcp(&mode) != 0)
+            if (bank_server_tcp(&mode, &bank) != 0)
                 goto error;
             break;
         case UDP:
-            if (bank_server_udp(&mode) != 0)
+            if (bank_server_udp(&mode, &bank) != 0)
                 goto error;
             break;
         default:

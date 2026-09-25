@@ -18,6 +18,13 @@
 #define _BANK__PORT_MIN (1024)
 #define _BANK__PORT_MAX (65535)
 
+#define _BANK__BUF_SIZE (256)
+
+#define _BANK__BALANCE_MSG_PREFIX "BALANCE"
+#define _BANK__DEPOSIT_MSG_PREFIX "DEPOSIT"
+#define _BANK__WITHDRAW_MSG_PREFIX "WITHDRAW"
+#define _BANK__QUIT_MSG "QUIT"
+
 
 enum protocol {
     TCP,
@@ -30,6 +37,11 @@ struct appmode {
     int addr;           /** IP address (IPv4) */
     int port;           /** intended application port */
 } typedef appmode_t;
+
+
+struct bank {
+    int balance;
+} typedef bank_t;
 
 
 /** helper for printinf appmode_t structs  */
