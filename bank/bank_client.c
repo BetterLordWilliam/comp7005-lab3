@@ -28,8 +28,8 @@ int main(int argc, char** argv)
     int sendr;
     int recvr;
 
-    char* wbuf;
-    char* rbuf;
+    char* rbuf = (char*)calloc(BUF_SIZE, sizeof(char));
+    char* wbuf = (char*)calloc(BUF_SIZE, sizeof(char));
 
     // initialize application mode all fields to 0
     appmode_t mode = { 0 };
@@ -37,14 +37,9 @@ int main(int argc, char** argv)
     struct sockaddr_in saddr = { 0 };
     struct pollfd pfd = { 0 };
 
-    // buffer allocations
-    rbuf = (char*)calloc(BUF_SIZE, sizeof(char));
-    wbuf = (char*)calloc(BUF_SIZE, sizeof(char));
-
     // determine proto & port from program arguments
     // we need 3 arguments to this program
     // be strict, reject more or less
-
     if (argc != 3) {
         printf("%s incorrect number of arguments\n", MESSAGE_PREFIX);
         goto error;
@@ -58,7 +53,7 @@ int main(int argc, char** argv)
         printf("%s unknown protocol\n", MESSAGE_PREFIX);
         goto error;
     }
-    // arg2 port process to short?
+    // arg2 port
     if ((pport = atoi(argv[2])) != 0 && test_port(pport))  {
         mode.port = htons(pport);
     } else {
@@ -69,9 +64,7 @@ int main(int argc, char** argv)
     // sanity check
     print_appmode(&mode);
 
-
-    // STEP 1
-    // protocol specifici socket setup
+    // protocol specific socket setup
     switch (mode.proto) {
         case TCP:
             // create TCP socket
@@ -114,9 +107,9 @@ int main(int argc, char** argv)
         
         if (pollr > 0) {
             // printf("user entered message\n");
-
             // figure out what the revent is from `poll` & act accordingly
             // invalid value means error exit
+
             if (pfd.revents & ( POLLNVAL | POLLERR | POLLHUP )) {
                 goto error; 
 
@@ -131,6 +124,13 @@ int main(int argc, char** argv)
 
                 // protocol dependent stuff will happen in here again
                 // printf("you typed this command: %s\n", rbuf);
+
+                // [WO] actually it would seem like there is less proto specific
+                // stuff for the client since the connect trick for UDP
+                // memorizing the destination & allowing the same syscalls
+                // to be used.
+                // maybe I dont need to seperate?
+
                 sendr = send(sockfd, rbuf, BUF_SIZE, 0);
                 // printf("%d\n", sendr);
                 recvr = recv(sockfd, wbuf, BUF_SIZE, 0);
@@ -149,9 +149,7 @@ int main(int argc, char** argv)
     printf("client program terminating\n");
 
     close(sockfd);
-        
     free(rbuf);
-    free(wbuf);
 
     return 0;
 
@@ -159,8 +157,7 @@ error:
     printf("error running client program exiting\n");
 
     close(sockfd);
-
     free(rbuf);
-    free(wbuf);
+
     return 1;
 }
