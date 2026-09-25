@@ -139,10 +139,14 @@ int main(int argc, char** argv)
             printf("error with poll\n");
             goto error;
         } // don't have to handle timeout because timeout is infinite
+        printf("uh oh\n");
+
     } while (1);
 
     printf("client program terminating\n");
 
+    close(sockfd);
+        
     free(rbuf);
     free(wbuf);
 
@@ -150,6 +154,9 @@ int main(int argc, char** argv)
 
 error:
     printf("error running client program exiting\n");
+
+    close(sockfd);
+
     free(rbuf);
     free(wbuf);
     return 1;

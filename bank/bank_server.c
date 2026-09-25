@@ -35,6 +35,8 @@ int main(int argc, char** argv)
 
     appmode_t mode = { 0 };
     struct sockaddr_in saddr = { 0 };
+    struct sockaddr_in caddr = { 0 };
+    socklen_t caddr_len;
     struct pollfd pfd = { 0 };
 
     rbuf = (char*)calloc(BUF_SIZE, sizeof(char));
@@ -132,28 +134,42 @@ int main(int argc, char** argv)
 
         // handle poll stuff
         if (pollr > 0) {
-
             if (pfd.revents & ( POLLNVAL | POLLERR | POLLHUP ))  {
                 goto error;
             } else {
-                readr = recv(pollablefd, rbuf, BUF_SIZE, 0);
-                rbuf[readr] = '\0';
+                // must be done in a protocol specific fashion
+                // `recv` is fine for TCP
+                // `recvfrom` is required for UDP because I don't know where
+                // unless I get it from incoming message for later `sendto`
+                switch (mode.proto) {
+                    case TCP:
+                        readr = recv(pollablefd, rbuf, BUF_SIZE, 0);
+                        break;
+                    case UDP:
+                        readr = recvfrom(pollablefd, rbuf, BUF_SIZE, 0,
+                            (struct sockaddr*)&caddr, &caddr_len);
+                        break;
+                }
             }
+
+            rbuf[readr] = '\0';
 
             // read into a buffer & then parse (generic actions)
             printf("%s\n", rbuf);
 
             // protocol specific reply (then continue listening)
-             
 
         } else {
             printf("error with poll\n");
             goto error;
         } // don't have to handle timeout because timeout is infinite
+        printf("uh oh\n");
 
     } while (1);
 
     printf("server program terminating\n");
+    
+    close(pollablefd);
 
     free(rbuf);
     free(wbuf);
@@ -162,6 +178,8 @@ int main(int argc, char** argv)
 
 error:
     printf("error running server program exiting\n");
+
+    close(pollablefd);
 
     free(rbuf);
     free(wbuf);
