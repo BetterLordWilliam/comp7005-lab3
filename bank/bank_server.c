@@ -148,6 +148,7 @@ int main(int argc, char** argv)
                         readr = recv(pollablefd, rbuf, BUF_SIZE, 0);    // PROPER ERROR HANDLING
                         break;
                     case UDP:
+                        caddr_len = sizeof(caddr);                      // initialized
                         readr = recvfrom(pollablefd, rbuf, BUF_SIZE, 0,
                             (struct sockaddr*)&caddr, &caddr_len);      // PROPER ERROR HANDLING
                         // printf("RECVFROM: %d\n", readr);
@@ -160,15 +161,15 @@ int main(int argc, char** argv)
                 printf("%s\n", rbuf);
 
                 // protocol specific reply (then continue listening)
-                // switch (mode.proto) {
-                //    case TCP:
-                //        sendr = send(pollablefd, "reply", 5, 0);  // PROPER ERROR HANDLING
-                //        break;
-                //    case UDP:
-                //        sendr = sendto(pollablefd, "reply", 5, 0,
-                //            (struct sockaddr*)&caddr, caddr_len); // PROPER ERROR HANDLING
-                //        break;
-                // }
+                switch (mode.proto) {
+                    case TCP:
+                        sendr = send(pollablefd, "reply", 5, 0);  // PROPER ERROR HANDLING
+                        break;
+                    case UDP:
+                        sendr = sendto(pollablefd, "reply", 5, 0,
+                            (struct sockaddr*)&caddr, caddr_len); // PROPER ERROR HANDLING
+                        break;
+                }
             }
 
         } else {
