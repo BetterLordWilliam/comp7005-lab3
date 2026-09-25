@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <poll.h>
 #include <sys/socket.h>
 #include <netinet/ip.h>
@@ -11,6 +12,8 @@
 
 
 #define MESSAGE_PREFIX "[SERVER]"
+
+#define BUF_SIZE (256)
 
 // https://www.geeksforgeeks.org/computer-networks/simple-client-server-application-in-c/
 // https://www.geeksforgeeks.org/computer-networks/udp-client-server-using-connect-c-implementation/
@@ -25,10 +28,17 @@ int main(int argc, char** argv)
     int listenr;
     int acceptr;
     int pollr;
+    int readr;
+
+    char* rbuf;
+    char* wbuf;
 
     appmode_t mode = { 0 };
     struct sockaddr_in saddr = { 0 };
     struct pollfd pfd = { 0 };
+
+    rbuf = (char*)calloc(BUF_SIZE, sizeof(char));
+    wbuf = (char*)calloc(BUF_SIZE, sizeof(char));
 
 
     // STEP 1
@@ -117,18 +127,45 @@ int main(int argc, char** argv)
     pfd.events  = POLLIN;
     pfd.revents = 0;
 
-    while (1) {
+    do {
         pollr = poll(&pfd, 1, -1);
 
         // handle poll stuff
+        if (pollr > 0) {
 
-        break;
-    }
+            if (pfd.revents & ( POLLNVAL | POLLERR | POLLHUP ))  {
+                goto error;
+            } else {
+                readr = recv(pollablefd, rbuf, BUF_SIZE, 0);
+                rbuf[readr] = '\0';
+            }
+
+            // read into a buffer & then parse (generic actions)
+            printf("%s\n", rbuf);
+
+            // protocol specific reply (then continue listening)
+             
+
+        } else {
+            printf("error with poll\n");
+            goto error;
+        } // don't have to handle timeout because timeout is infinite
+
+    } while (1);
+
+    printf("server program terminating\n");
+
+    free(rbuf);
+    free(wbuf);
 
     return 0;
 
 error:
     printf("error running server program exiting\n");
+
+    free(rbuf);
+    free(wbuf);
+
     return 1;
 }
 

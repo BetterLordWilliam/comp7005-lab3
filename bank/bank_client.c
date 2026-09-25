@@ -25,6 +25,8 @@ int main(int argc, char** argv)
     int connectr;
     int pollr;
     int readr;
+    int sendr;
+    int recvr;
 
     char* wbuf;
     char* rbuf;
@@ -35,6 +37,9 @@ int main(int argc, char** argv)
     struct sockaddr_in saddr = { 0 };
     struct pollfd pfd = { 0 };
 
+    // buffer allocations
+    rbuf = (char*)calloc(BUF_SIZE, sizeof(char));
+    wbuf = (char*)calloc(BUF_SIZE, sizeof(char));
 
     // determine proto & port from program arguments
     // we need 3 arguments to this program
@@ -64,10 +69,6 @@ int main(int argc, char** argv)
     // sanity check
     print_appmode(&mode);
 
-    // buffer allocations
-    rbuf = (char*)calloc(BUF_SIZE, sizeof(char));
-    wbuf = (char*)calloc(BUF_SIZE, sizeof(char));
-
 
     // STEP 1
     // protocol specifici socket setup
@@ -93,6 +94,8 @@ int main(int argc, char** argv)
     // STEP 2 
     // connect, this is actually the same regardless of TCP/UDP (for now)
     // even though UDP is connectionless
+    // this works by caching the destination socket address for future calls
+    // so for application logic I can use `recv` & `send`
     connectr = connect(sockfd, (struct sockaddr*)&saddr, sizeof(saddr));
     if (connectr < 0)
         goto error;
@@ -106,7 +109,7 @@ int main(int argc, char** argv)
     
     printf("connection to server established entering poll loop.\n");
 
-    while (1) {
+    do {
         pollr = poll(&pfd, 1, -1); // poll on stdin (messages)
         
         if (pollr > 0) {
@@ -127,17 +130,16 @@ int main(int argc, char** argv)
                     break;
                 }
                 rbuf[readr] = '\0';
-                printf("you typed this command: %s\n", rbuf);
+                // printf("you typed this command: %s\n", rbuf);
+                sendr = send(sockfd, rbuf, BUF_SIZE, 0);
+                printf("%d\n", sendr);
             }
 
-        } else if (pollr < 0) {
+        } else {
             printf("error with poll\n");
             goto error;
-
-        } else {
-            // should never get here because there is infinite timeout
-        }
-    }
+        } // don't have to handle timeout because timeout is infinite
+    } while (1);
 
     printf("client program terminating\n");
 
