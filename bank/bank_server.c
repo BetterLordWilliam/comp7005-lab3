@@ -25,38 +25,41 @@ int bank_processing(bank_t* bank, const char* request, char* response) {
 
     if (strncmp(_BANK__BALANCE_MSG_PREFIX,
             request, strlen(_BANK__BALANCE_MSG_PREFIX)) == 0) {
-        printf("balance request incoming\n");
+        // printf("balance request incoming\n");
+        sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d",
+            bank->balance);
 
     } else if (strncmp(_BANK__DEPOSIT_MSG_PREFIX,
             request, strlen(_BANK__DEPOSIT_MSG_PREFIX)) == 0) {
         printf("deposit message incoming\n");
         // bytes after prefix length until '\n' or '\0' are to be parsed as an integer
         sscanf(request, _BANK__DEPOSIT_MSG_PREFIX "  %d", &t);
-        printf("you are despositing: %d\n", t);
-        
+        // printf("you are despositing: %d\n", t);
         bank->balance += t;
+        sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d",
+            bank->balance);
 
     } else if (strncmp(_BANK__WITHDRAW_MSG_PREFIX,
             request, strlen(_BANK__WITHDRAW_MSG_PREFIX)) == 0) {
-        printf("withdraw message incoming\n");
+        // printf("withdraw message incoming\n");
         // bytes after prefix length until '\n' or '\0' are to be parsed as an integer
         sscanf(request, _BANK__WITHDRAW_MSG_PREFIX " %d", &t);
-        printf("you are withdrawinug: %d\n", t);
-
+        // printf("you are withdrawinug: %d\n", t);
         // cannot withdraw if the amount withdrawing is greater than the amount
         // in the bank, so just do nothing
         if (t < bank->balance)
             bank->balance -= t;
+        sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d",
+            bank->balance);
 
     } else if (strncmp(_BANK__QUIT_MSG,
             request, strlen(_BANK__QUIT_MSG)) == 0) {
-        printf("quit message incoming\n");
+        // printf("quit message incoming\n");
+        sprintf(response, _BANK__SERVER_SHUTDOWN_MSG_PREFIX);
 
     } else {
         printf("unknown message type received\n");
     }
-
-    printf("bank balance: %d\n", bank->balance);
 
     return 0; 
 }
@@ -117,14 +120,14 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
 
                 // read into a buffer & then parse (generic actions)
                 rbuf[readr] = '\0';
-                printf("%s\n", rbuf);
+               //  printf("%s\n", rbuf);
                 
                 // app logic (common)
                 // should & will be its own function
                 bank_processing(bank, rbuf, wbuf);
 
                 // send the reply
-                sendr = send(pfd.fd, "reply", 5, 0);  // PROPER ERROR HANDLING
+                sendr = send(pfd.fd, wbuf, _BANK__BUF_SIZE, 0);  // PROPER ERROR HANDLING
             }
         } else {
             printf("error with poll\n");
@@ -200,16 +203,16 @@ int bank_server_udp(appmode_t* am, bank_t* bank)
                 readr = recvfrom(sockfd, rbuf, _BANK__BUF_SIZE, 0,
                     (struct sockaddr*)&caddr, &caddr_len);      // PROPER ERROR HANDLING
                 // printf("RECVFROM: %d\n", readr);
-                printf("PEER ADDR STUFF: %d, %d, %d\n", caddr.sin_addr.s_addr, caddr.sin_port, caddr_len);
+                // printf("PEER ADDR STUFF: %d, %d, %d\n", caddr.sin_addr.s_addr, caddr.sin_port, caddr_len);
 
                 // read into a buffer & then parse (generic actions)
                 rbuf[readr] = '\0';
-                printf("%s\n", rbuf);
+                // printf("%s\n", rbuf);
 
                 // protocol agnostic message processing
                 bank_processing(bank, rbuf, wbuf);
 
-                sendr = sendto(sockfd, "reply", 5, 0,
+                sendr = sendto(sockfd, wbuf, _BANK__BUF_SIZE, 0,
                     (struct sockaddr*)&caddr, caddr_len); // PROPER ERROR HANDLING
             }
 
