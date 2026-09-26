@@ -166,9 +166,8 @@ int consock(int fd, const struct sockaddr* saddr, socklen_t saddr_len)
                 continue;
             return -1;
         }
-        break;
+        return r;
     } while (1);
-    return r;
 }
 
 
@@ -183,9 +182,8 @@ ssize_t readstdin(int fd, char* buf, size_t buf_len)
             return -1;
         }
         buf[n] = '\0';
-        break;
+        return n;
     } while (1);
-    return n;
 }
 
 int acceptcon(int fd)
@@ -199,7 +197,6 @@ int acceptcon(int fd)
             return -1;
         }
         return cfd;
-        break;
     } while (1);
 }
 

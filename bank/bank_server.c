@@ -34,20 +34,25 @@ void bank_processing(bank_t* bank, const char* request, char* response) {
     } else if (strncmp(_BANK__DEPOSIT_MSG_PREFIX,
             request, strlen(_BANK__DEPOSIT_MSG_PREFIX)) == 0) {
 
-        sscanf(request, _BANK__DEPOSIT_MSG_PREFIX "  %d", &t);
-        if (t > 0)
+        if (sscanf(request, _BANK__DEPOSIT_MSG_PREFIX "  %d", &t) == 1) {
             bank->balance += t;
-        sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d\n",
-            bank->balance);
+            sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d\n",
+                bank->balance);
+        } else {
+            sprintf(response, "bad command\n");
+        }
 
     } else if (strncmp(_BANK__WITHDRAW_MSG_PREFIX,
             request, strlen(_BANK__WITHDRAW_MSG_PREFIX)) == 0) {
 
-        sscanf(request, _BANK__WITHDRAW_MSG_PREFIX " %d", &t);
-        if (t > 0 && t < bank->balance)
-            bank->balance -= t;
-        sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d\n",
-            bank->balance);
+        if (sscanf(request, _BANK__WITHDRAW_MSG_PREFIX " %d", &t) == 1) {
+            if (t < bank->balance)
+                bank->balance -= t;
+            sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d\n",
+                bank->balance);
+        } else {
+            sprintf(response, "bad command\n");
+        }
 
     } else if (strncmp(_BANK__QUIT_MSG,
             request, strlen(_BANK__QUIT_MSG)) == 0) {

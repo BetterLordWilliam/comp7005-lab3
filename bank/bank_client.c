@@ -115,7 +115,7 @@ int bank_client_tcp(appmode_t* mode)
     free(rbuf);
     free(wbuf);
 
-    return 0;
+    return BANKCLIENT_OK;
 
 error:
     if (sockfd > 0)
@@ -124,7 +124,7 @@ error:
     free(rbuf);
     free(wbuf);
 
-    return 1;
+    return BANKCLIENT_ERR;
 }
 
 
@@ -138,14 +138,17 @@ int bank_client_udp(appmode_t* mode)
     int recvr;
 
     socklen_t saddr_len;
+    socklen_t paddr_len;
 
     struct sockaddr_in saddr = { 0 };
+    struct sockaddr_in paddr = { 0 }; // write reply address to this instead of the servers known address
     struct pollfd pfd = { 0 };
 
     char* rbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
     char* wbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
 
     saddr_len = sizeof(saddr);
+    paddr_len = sizeof(paddr);
 
     // create UDP socket
     if (getsockfd_udp(&sockfd) > 0)
@@ -185,7 +188,7 @@ int bank_client_udp(appmode_t* mode)
                 }
                 // wait & then receive the reply from the server
                 recvr = recvfrom_all(sockfd, wbuf, _BANK__BUF_SIZE,
-                    (struct sockaddr*)&saddr, &saddr_len);
+                    (struct sockaddr*)&paddr, &paddr_len);
                 if (recvr < 0) {
                     break;
                 }
@@ -226,7 +229,7 @@ int bank_client_udp(appmode_t* mode)
     free(rbuf);
     free(wbuf);
 
-    return 0;
+    return BANKCLIENT_OK;
 
 error:
     if (sockfd > 0)
@@ -235,7 +238,7 @@ error:
     free(rbuf);
     free(wbuf);
 
-    return 1;
+    return BANKCLIENT_ERR;
 }
 
 
