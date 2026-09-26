@@ -15,9 +15,10 @@
 
 
 /**
-Takes message from the client & processes the request
+Takes message from the client & processes the request writes a response message.
     bank_t* bank pointer to bank struct (bank state)
     char* request
+    char* response
 */
 int bank_processing(bank_t* bank, const char* request, char* response) {
     printf("%s\n", request);
@@ -25,28 +26,22 @@ int bank_processing(bank_t* bank, const char* request, char* response) {
 
     if (strncmp(_BANK__BALANCE_MSG_PREFIX,
             request, strlen(_BANK__BALANCE_MSG_PREFIX)) == 0) {
-        // printf("balance request incoming\n");
+
         sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d",
             bank->balance);
 
     } else if (strncmp(_BANK__DEPOSIT_MSG_PREFIX,
             request, strlen(_BANK__DEPOSIT_MSG_PREFIX)) == 0) {
-        printf("deposit message incoming\n");
-        // bytes after prefix length until '\n' or '\0' are to be parsed as an integer
+
         sscanf(request, _BANK__DEPOSIT_MSG_PREFIX "  %d", &t);
-        // printf("you are despositing: %d\n", t);
         bank->balance += t;
         sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d",
             bank->balance);
 
     } else if (strncmp(_BANK__WITHDRAW_MSG_PREFIX,
             request, strlen(_BANK__WITHDRAW_MSG_PREFIX)) == 0) {
-        // printf("withdraw message incoming\n");
-        // bytes after prefix length until '\n' or '\0' are to be parsed as an integer
+
         sscanf(request, _BANK__WITHDRAW_MSG_PREFIX " %d", &t);
-        // printf("you are withdrawinug: %d\n", t);
-        // cannot withdraw if the amount withdrawing is greater than the amount
-        // in the bank, so just do nothing
         if (t < bank->balance)
             bank->balance -= t;
         sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d",
@@ -54,7 +49,7 @@ int bank_processing(bank_t* bank, const char* request, char* response) {
 
     } else if (strncmp(_BANK__QUIT_MSG,
             request, strlen(_BANK__QUIT_MSG)) == 0) {
-        // printf("quit message incoming\n");
+
         sprintf(response, _BANK__SERVER_SHUTDOWN_MSG_PREFIX);
 
     } else {
@@ -117,13 +112,11 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
                 goto error;
             } else {
                 readr = recv(pfd.fd, rbuf, _BANK__BUF_SIZE, 0);    // PROPER ERROR HANDLING
-
-                // read into a buffer & then parse (generic actions)
+                
+                // read incomming message into buffer
                 rbuf[readr] = '\0';
-               //  printf("%s\n", rbuf);
                 
                 // app logic (common)
-                // should & will be its own function
                 bank_processing(bank, rbuf, wbuf);
 
                 // send the reply
@@ -183,9 +176,7 @@ int bank_server_udp(appmode_t* am, bank_t* bank)
     // 1 socket setup
     if (getsockfd_udp(&sockfd) > 0)
         goto error;
-    // printf("%d\n", sockfd);
     setsockaddr_lb(&saddr, am->port); // sockaddr -> lb:port
-    // printf("%d, %hd\n", saddr.sin_addr.s_addr, saddr.sin_port);
     if (bindsock(sockfd, (struct sockaddr*)&saddr, sizeof(saddr)))
         goto error;
 
@@ -205,19 +196,16 @@ int bank_server_udp(appmode_t* am, bank_t* bank)
             } else {
                 readr = recvfrom(sockfd, rbuf, _BANK__BUF_SIZE, 0,
                     (struct sockaddr*)&caddr, &caddr_len);      // PROPER ERROR HANDLING
-                // printf("RECVFROM: %d\n", readr);
-                // printf("PEER ADDR STUFF: %d, %d, %d\n", caddr.sin_addr.s_addr, caddr.sin_port, caddr_len);
-
-                // read into a buffer & then parse (generic actions)
+                
+                // read incomming message into buffer
                 rbuf[readr] = '\0';
-                // printf("%s\n", rbuf);
 
-                // protocol agnostic message processing
+                // app logic (common)
                 bank_processing(bank, rbuf, wbuf);
-
+                    
+                // send the reply
                 sendr = sendto(sockfd, wbuf, _BANK__BUF_SIZE, 0,
                     (struct sockaddr*)&caddr, caddr_len); // PROPER ERROR HANDLING
-                
                 continue;
             }
 
@@ -255,7 +243,7 @@ int main(int argc, char** argv)
     appmode_t mode = { 0 };
     bank_t bank = { 0 };
 
-    bank.balance = 1000;    // set the initial balance as $1000
+    bank.balance = 1000;
 
     // parse arguments
     // determine proto & port from program arguments

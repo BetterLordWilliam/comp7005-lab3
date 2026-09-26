@@ -119,20 +119,13 @@ int main(int argc, char** argv)
                     break;
                 }
                 rbuf[readr] = '\0';
-
-                // protocol dependent stuff will happen in here again
-                // printf("you typed this command: %s\n", rbuf);
-
-                // [WO] actually it would seem like there is less proto specific
-                // stuff for the client since the connect trick for UDP
-                // memorizing the destination & allowing the same syscalls
-                // to be used.
-                // maybe I dont need to seperate?
-
                 sendr = send(sockfd, rbuf, _BANK__BUF_SIZE, 0);
-                // printf("%d\n", sendr);
                 recvr = recv(sockfd, wbuf, _BANK__BUF_SIZE, 0);
+
                 printf("%s\n", wbuf); // reply from the server
+                // TODO parse server reply (if its the BYE one I should kill myself -- process)
+    
+                continue;
             }
 
         } else {
