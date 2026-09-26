@@ -97,11 +97,11 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
         goto error;
     listenr = listen(sockfd, 1); // double check connection queue size
     if (listenr != 0)
-        goto error;         // poor error handling need to improve
+        goto error;
     printf("listening\n");
     consockfd = accept(sockfd, NULL, NULL); // block me until connection is made, returns new connection fd
-    if (listen < 0)
-        goto error;         // poor error handling need to improve
+    if (consockfd < 0)
+        goto error;
 
     // 2 server poll loop
     pfd.fd      = consockfd;
@@ -128,6 +128,7 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
 
                 // send the reply
                 sendr = send(pfd.fd, wbuf, _BANK__BUF_SIZE, 0);  // PROPER ERROR HANDLING
+                continue;
             }
         } else {
             printf("error with poll\n");
@@ -141,6 +142,7 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
     printf("server program terminating\n");
 
     close(sockfd);
+    close(consockfd);
     free(rbuf);
     free(wbuf);
 
@@ -150,6 +152,7 @@ error:
     printf("there was an error running the server quitting server event loop\n");
 
     close(sockfd);
+    close(consockfd);
     free(rbuf);
     free(wbuf);
 
@@ -214,6 +217,8 @@ int bank_server_udp(appmode_t* am, bank_t* bank)
 
                 sendr = sendto(sockfd, wbuf, _BANK__BUF_SIZE, 0,
                     (struct sockaddr*)&caddr, caddr_len); // PROPER ERROR HANDLING
+                
+                continue;
             }
 
         } else {
