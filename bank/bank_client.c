@@ -32,11 +32,15 @@ int bank_client_tcp(appmode_t* mode)
     int sendr;
     int recvr;
 
+    socklen_t saddr_len;
+
     struct sockaddr_in saddr = { 0 };
     struct pollfd pfd = { 0 };
 
     char* rbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
     char* wbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
+
+    saddr_len = sizeof(saddr);
 
     // create TCP socket
     if (getsockfd_tcp(&sockfd) > 0)
@@ -44,7 +48,7 @@ int bank_client_tcp(appmode_t* mode)
     setsockaddr_lb(&saddr, mode->port); // sockaddr -> lb:port
     
     // connect to server with TCP
-    connectr = consock(sockfd, (struct sockaddr*)&saddr, sizeof(saddr));
+    connectr = consock(sockfd, (struct sockaddr*)&saddr, saddr_len);
     if (connectr < 0)
         goto error;
 
@@ -65,7 +69,7 @@ int bank_client_tcp(appmode_t* mode)
                 memset(wbuf, 0, _BANK__BUF_SIZE);
                 
                 // read command from stdin
-                readr = readstdin(pfd.fd, rbuf, _BANK__BUF_SIZE);
+                readr = readstdin(pfd.fd, rbuf, (size_t)_BANK__BUF_SIZE);
                 if (readr < 0) {
                     break;
                 }
@@ -73,12 +77,12 @@ int bank_client_tcp(appmode_t* mode)
                     break;
                 }
                 // TCP send command the the server
-                sendr = send_all(sockfd, rbuf, readr);
+                sendr = send_all(sockfd, rbuf, (ssize_t)readr);
                 if (sendr < 0) {
                     break;
                 }
                 // wait & then receive the reply from the server
-                recvr = recv_all(sockfd, wbuf, _BANK__BUF_SIZE);
+                recvr = recv_all(sockfd, wbuf, (ssize_t)_BANK__BUF_SIZE);
                 if (recvr < 0) {
                     break;
                 }
@@ -147,12 +151,6 @@ int bank_client_udp(appmode_t* mode)
     if (getsockfd_udp(&sockfd) > 0)
         goto error;
     setsockaddr_lb(&saddr, mode->port); // sockaddr -> lb:port
-    
-    // using connect with UDP ensures that I dont always need to 
-    // pass the address around
-    // connectr = consock(sockfd, (struct sockaddr*)&saddr, sizeof(saddr));
-    // if (connectr < 0)
-    //    goto error;
 
     pfd.fd      = STDIN_FILENO; // stdin because we are waiting for user input (which is the message)
     pfd.events  = POLLIN;
@@ -270,7 +268,7 @@ int main(int argc, char** argv)
     }
     // arg2 port
     if ((pport = atoi(argv[2])) != 0 && test_port(pport))  {
-        mode.port = htons(pport);
+        mode.port = pport;
     } else {
         printf("%s failed to parse port to integer\n", MESSAGE_PREFIX);
         goto error;

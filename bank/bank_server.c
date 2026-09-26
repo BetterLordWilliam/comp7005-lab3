@@ -16,7 +16,8 @@
 
 
 /**
-Takes message from the client & processes the request writes a response message.
+Takes message from the client & processes the request
+& writes a response message.
     bank_t* bank pointer to bank struct (bank state)
     char* request
     char* response
@@ -55,7 +56,7 @@ void bank_processing(bank_t* bank, const char* request, char* response) {
         bank->should_quit = 1;
 
     } else {
-        printf("unknown message type received\n");
+        sprintf(response, "unknown message type\n");
     }
 }
 
@@ -67,6 +68,7 @@ enum ret_bankserver {
 
 
 /**
+bank server implementation with sock_stream (TCP) underlying protocol.
 */
 int bank_server_tcp(appmode_t* am, bank_t* bank)
 {
@@ -100,8 +102,9 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
     // tcp server loop 
     do {
         // tcp connection acceptance (1 client at a time)
-        consockfd = accept(sockfd, NULL, NULL); // block me until connection is made, returns new connection fd
-        if (consockfd < 0) continue; // retry if connection fails
+        consockfd = acceptcon(sockfd);
+        if (consockfd < 0)
+            break;
         
         // tcp connection poll loop
         pfd.fd      = consockfd;
@@ -197,6 +200,7 @@ error:
 }
 
 /**
+bank server implementation with sock_dgram (UDP) underlying protocol.
 */
 int bank_server_udp(appmode_t* am, bank_t* bank)
 {
@@ -333,7 +337,7 @@ int main(int argc, char** argv)
     }
     // arg2 port
     if ((pport = atoi(argv[2])) != 0 && test_port(pport))  {
-        mode.port = htons(pport);
+        mode.port = pport;
     } else {
         printf("%s failed to parse port to integer\n", MESSAGE_PREFIX);
         goto error;

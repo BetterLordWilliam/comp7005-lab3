@@ -28,11 +28,8 @@ int test_port(int port)
 void setsockaddr_lb(struct sockaddr_in* addr, int port)
 {
     addr->sin_family        = AF_INET;
-    addr->sin_port          = port;
+    addr->sin_port          = htons(port);
     addr->sin_addr.s_addr   = htonl(INADDR_LOOPBACK); // host to network byte-ordering
-    
-    // if (inet_pton(AF_INET, _BANK__LOOPBACK_STR, &addr->sin_addr) != 1)
-    //    return 1;
 }
 
 
@@ -186,8 +183,23 @@ ssize_t readstdin(int fd, char* buf, size_t buf_len)
             return -1;
         }
         buf[n] = '\0';
+        break;
     } while (1);
     return n;
 }
 
+int acceptcon(int fd)
+{
+    int cfd = 0;
+    do {
+        cfd = accept(fd, NULL, NULL);
+        if (cfd < 0) {
+            if (errno == EINTR)
+                continue;
+            return -1;
+        }
+        return cfd;
+        break;
+    } while (1);
+}
 

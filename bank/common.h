@@ -125,5 +125,12 @@ connect wrapper handle common interrupts
 */
 int consock(int fd, const struct sockaddr* saddr, socklen_t saddr_len);
 
+/**
+`accept` blocking syscall wrapper
+    `EINTR` retry
+    otherwise legitimate error is encountered & we abandon connection attempt
+*/
+int acceptcon(int fd);
+
 #endif
 
