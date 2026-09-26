@@ -46,10 +46,13 @@ void bank_processing(bank_t* bank, const char* request, char* response) {
             request, strlen(_BANK__WITHDRAW_MSG_PREFIX)) == 0) {
 
         if (sscanf(request, _BANK__WITHDRAW_MSG_PREFIX " %d", &t) == 1) {
-            if (t < bank->balance)
+            if (t <= bank->balance) {
                 bank->balance -= t;
-            sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d\n",
-                bank->balance);
+                sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d\n",
+                    bank->balance);
+            } else  {
+                sprintf(response, "ERR INSUFFICIENT_FUNDS\n");
+            }
         } else {
             sprintf(response, "bad command\n");
         }
