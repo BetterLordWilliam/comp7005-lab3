@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/socket.h>
+#include <string.h>
 #include <netinet/ip.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -80,6 +81,64 @@ int bindsock(int fd, struct sockaddr* sockaddr, socklen_t addrlen)
             continue;
         return 1;
     }
+    return 0;
+}
+
+
+int recvfrom_all(int fd, char* buf, size_t buf_len,
+    struct sockaddr* saddr, socklen_t* saddr_len)
+{
+    do {
+        break;
+    } while (1);
+    return 0;
+}
+
+
+int sendto_all(int fd, char* buf, size_t buf_len,
+    struct sockaddr* saddr, socklen_t saddr_len)
+{
+    do {
+        break;
+    } while (1);
+    return 0;
+}
+
+
+ssize_t recv_all(int fd, char* buf, ssize_t buf_len)
+{
+    ssize_t received = 0;
+    do {
+        ssize_t n = recv(fd, buf + received, buf_len - 1 - received, 0);
+        if (n == 0) {
+            return 0;
+        }
+        if (n < 0) {
+            if (errno == EINTR)
+                continue;
+            return -1;
+        }
+        received += n;
+        buf[received] = '\0';
+        if (strchr(buf, '\n') != NULL)
+            break;
+    } while (received < buf_len - 1);
+    return received;
+}
+
+
+ssize_t send_all(int fd, char* buf, ssize_t buf_len)
+{
+    ssize_t sent = 0;
+    do {
+        ssize_t n = send(fd, buf + sent, buf_len - sent, 0);
+        if (n < 0) {
+            if (errno == EINTR)
+                continue;
+            return -1;
+        }
+        sent += n;
+    } while (sent < buf_len);
     return 0;
 }
 

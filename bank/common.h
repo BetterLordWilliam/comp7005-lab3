@@ -77,5 +77,38 @@ safely handles the bind syscall
 */
 int bindsock(int fd, struct sockaddr* sockaddr, socklen_t addrlen);
 
+/**
+recvfrom wrapper handle common interrupts.
+    `EINTR` retry the recvfrom
+    otherwise legitimate error is encountered & we abandon the message
+
+reads as a valid string
+*/
+int revcfrom_all(int fd, char* buf, size_t buf_len,
+    struct sockaddr* saddr, socklen_t* saddr_len);
+/**
+sendto wrapper handle commond interrupts.
+    `EINTR` retry the sendto
+    otherwise legitimate error is encountered & we abandon the message
+*/
+int sendto_all(int fd, char* buf, size_t buf_len,
+    struct sockaddr* saddr, socklen_t saddr_len);
+
+/**
+recv wrapper handle common interripts & line end message delimination.
+    `EINTR` retry
+    otherwise legitimate error is encountered & we abandon the message
+
+reads as a valid string
+*/
+ssize_t recv_all(int fd, char* buf, ssize_t buf_len);
+
+/**
+send wrapper handle common interrupts, and line end message delimination.
+    `EINTR` retry
+    otherwise legitimate error is encountered & we abandon the message
+*/
+ssize_t send_all(int fd, char* buf, ssize_t buf_len);
+
 #endif
 

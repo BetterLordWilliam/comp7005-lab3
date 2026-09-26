@@ -239,16 +239,30 @@ int bank_server_udp(appmode_t* am, bank_t* bank)
                 goto error;
 
             } else {
+                memset(rbuf, 0, _BANK__BUF_SIZE);
+                memset(wbuf, 0, _BANK__BUF_SIZE);
+
                 readr = recvfrom(sockfd, rbuf, _BANK__BUF_SIZE, 0,
-                    (struct sockaddr*)&caddr, &caddr_len);      // PROPER ERROR HANDLING
+                    (struct sockaddr*)&caddr, &caddr_len);
+
+                if (readr == -1) {
+                    if (errno == EINTR) continue;
+                    break;
+                }
                 
                 // read incomming message into buffer
                 rbuf[readr] = '\0';
                 // app logic (common)
                 bank_processing(bank, rbuf, wbuf);
                 // send the reply
-                sendr = sendto(sockfd, wbuf, _BANK__BUF_SIZE, 0,
-                    (struct sockaddr*)&caddr, caddr_len); // PROPER ERROR HANDLING
+                sendr = sendto(sockfd, wbuf, strlen(wbuf), 0,
+                    (struct sockaddr*)&caddr, caddr_len);
+
+                if (sendr == -1) {
+                    if (errno == EINTR) continue;
+                    break;
+                }
+
                 // time to end the server
                 if (bank->should_quit)
                     break;
