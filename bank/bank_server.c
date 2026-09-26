@@ -120,9 +120,8 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
                 } else {
                     memset(rbuf, 0, _BANK__BUF_SIZE);
                     memset(wbuf, 0, _BANK__BUF_SIZE);
-
-                    // read incomming message into buffer
-                    // tcp implications
+                    
+                    // read message
                     readr = recv_all(pfd.fd, rbuf, (ssize_t)_BANK__BUF_SIZE);
                     if (readr < 0) {
                         printf("error reading from client socket closing connection\n");
@@ -239,14 +238,8 @@ int bank_server_udp(appmode_t* am, bank_t* bank)
             } else {
                 memset(rbuf, 0, _BANK__BUF_SIZE);
                 memset(wbuf, 0, _BANK__BUF_SIZE);
-
-                // readr = recvfrom(sockfd, rbuf, _BANK__BUF_SIZE, 0,
-                //     (struct sockaddr*)&caddr, &caddr_len);
-                // if (readr == -1) {
-                //    if (errno == EINTR) continue;
-                //    break;
-                // }
-
+                
+                // read message
                 readr = recvfrom_all(pfd.fd, rbuf, _BANK__BUF_SIZE,
                     (struct sockaddr*)&caddr, &caddr_len);
                 if (readr < 0) {
@@ -262,8 +255,6 @@ int bank_server_udp(appmode_t* am, bank_t* bank)
                 bank_processing(bank, rbuf, wbuf);
 
                 // send the reply
-                // sendr = sendto(sockfd, wbuf, strlen(wbuf), 0,
-                //    (struct sockaddr*)&caddr, caddr_len);
                 sendr = sendto_all(pfd.fd, wbuf, strlen(wbuf),
                     (struct sockaddr*)&caddr, caddr_len);
                 if (sendr < 0) {
