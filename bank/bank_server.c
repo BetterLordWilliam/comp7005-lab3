@@ -21,7 +21,7 @@ Takes message from the client & processes the request writes a response message.
     char* response
 */
 void bank_processing(bank_t* bank, const char* request, char* response) {
-    printf("%s\n", request);
+    // printf("%s\n", request);
     int t;
 
     if (strncmp(_BANK__BALANCE_MSG_PREFIX,
@@ -83,22 +83,25 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
 
     char* rbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
     char* wbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
-
-    // 1 socket setup
+    
+    // tcp socket setup
     if (getsockfd_tcp(&sockfd) > 0)
         goto error;
     setsockaddr_lb(&saddr, am->port); // sockaddr -> lb:port
     if (bindsock(sockfd, (struct sockaddr*)&saddr, sizeof(saddr)))
         goto error;
+
+    // tcp listen for connections w/ queue size 1
     listenr = listen(sockfd, 1); // double check connection queue size
     if (listenr != 0)
         goto error;
-    printf("listening\n");
+
+    // tcp connection acceptance
     consockfd = accept(sockfd, NULL, NULL); // block me until connection is made, returns new connection fd
     if (consockfd < 0)
         goto error;
-
-    // 2 server poll loop
+    
+    // tcp connection poll loop
     pfd.fd      = consockfd;
     pfd.events  = POLLIN;
     pfd.revents = 0;
@@ -115,13 +118,10 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
                 
                 // read incomming message into buffer
                 rbuf[readr] = '\0';
-                
                 // app logic (common)
                 bank_processing(bank, rbuf, wbuf);
-
                 // send the reply
                 sendr = send(pfd.fd, wbuf, _BANK__BUF_SIZE, 0);  // PROPER ERROR HANDLING
-                
                 // time to end the server
                 if (bank->should_quit)
                     break;
@@ -182,14 +182,14 @@ int bank_server_udp(appmode_t* am, bank_t* bank)
     char* rbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
     char* wbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
 
-    // 1 socket setup
+    // udp socket setup
     if (getsockfd_udp(&sockfd) > 0)
         goto error;
     setsockaddr_lb(&saddr, am->port); // sockaddr -> lb:port
     if (bindsock(sockfd, (struct sockaddr*)&saddr, sizeof(saddr)))
         goto error;
-
-    // 2 server poll loop
+    
+    // socket poll loop
     pfd.fd      = sockfd;
     pfd.events  = POLLIN;
     pfd.revents = 0;
@@ -199,7 +199,7 @@ int bank_server_udp(appmode_t* am, bank_t* bank)
 
         // handle poll stuff
         if (pollr > 0) {
-            if (pfd.revents & ( POLLNVAL | POLLERR | POLLHUP ))  {
+            if (pfd.revents & ( POLLNVAL | POLLERR ))  {        // POLLHUP not raised (UDP therefore no connection)
                 goto error;
 
             } else {
@@ -208,14 +208,11 @@ int bank_server_udp(appmode_t* am, bank_t* bank)
                 
                 // read incomming message into buffer
                 rbuf[readr] = '\0';
-
                 // app logic (common)
                 bank_processing(bank, rbuf, wbuf);
-                    
                 // send the reply
                 sendr = sendto(sockfd, wbuf, _BANK__BUF_SIZE, 0,
                     (struct sockaddr*)&caddr, caddr_len); // PROPER ERROR HANDLING
-                
                 // time to end the server
                 if (bank->should_quit)
                     break;
@@ -288,6 +285,8 @@ int main(int argc, char** argv)
     }
     
     print_appmode(&mode);
+
+    // start the bank server according to the proto argument
     printf("starting server w/ proto %d\n", mode.proto);
 
     switch (mode.proto) {
