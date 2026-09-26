@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/socket.h>
+#include <unistd.h>
 #include <string.h>
 #include <netinet/ip.h>
 #include <netinet/in.h>
@@ -156,4 +157,37 @@ ssize_t send_all(int fd, char* buf, ssize_t buf_len)
     } while (sent < buf_len);
     return sent;
 }
+
+
+int consock(int fd, const struct sockaddr* saddr, socklen_t saddr_len)
+{
+    int r = 0;
+    do {
+        r = connect(fd, saddr, saddr_len);
+        if (r < 0) {
+            if (errno == EINTR)
+                continue;
+            return -1;
+        }
+        break;
+    } while (1);
+    return r;
+}
+
+
+ssize_t readstdin(int fd, char* buf, size_t buf_len)
+{
+    ssize_t n = 0;
+    do {
+        n = read(fd, buf, buf_len);
+        if (n < 0) {
+            if (errno == EINTR)
+                continue;
+            return -1;
+        }
+        buf[n] = '\0';
+    } while (1);
+    return n;
+}
+
 

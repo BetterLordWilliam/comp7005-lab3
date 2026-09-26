@@ -44,7 +44,7 @@ int bank_client_tcp(appmode_t* mode)
     setsockaddr_lb(&saddr, mode->port); // sockaddr -> lb:port
     
     // connect to server with TCP
-    connectr = connect(sockfd, (struct sockaddr*)&saddr, sizeof(saddr));
+    connectr = consock(sockfd, (struct sockaddr*)&saddr, sizeof(saddr));
     if (connectr < 0)
         goto error;
 
@@ -57,44 +57,37 @@ int bank_client_tcp(appmode_t* mode)
         pollr = poll(&pfd, 1, -1); // poll on stdin (messages)
         
         if (pollr > 0) {
-            if (pfd.revents & ( POLLNVAL | POLLERR | POLLHUP )) {
+            if (pfd.revents & ( POLLNVAL | POLLERR )) {
                 goto error; 
 
             } else if (pfd.revents & ( POLLIN )) {
                 memset(rbuf, 0, _BANK__BUF_SIZE);
                 memset(wbuf, 0, _BANK__BUF_SIZE);
-
-                readr = read(pfd.fd, rbuf, _BANK__BUF_SIZE - 1);
-                if (readr < 0)
-                    continue; // failed to read for this command
+                
+                // read command from stdin
+                readr = readstdin(pfd.fd, rbuf, _BANK__BUF_SIZE);
+                if (readr < 0) {
+                    break;
+                }
                 if (readr == 0) {
                     break;
                 }
-                rbuf[readr] = '\0';
-
-                sendr = send(sockfd, rbuf, readr, 0); // TCP implications
+                // TCP send command the the server
+                sendr = send_all(sockfd, rbuf, readr);
                 if (sendr < 0) {
-                }
-
-                recvr = recv(sockfd, wbuf, _BANK__BUF_SIZE - 1, 0);
-                if (recvr < 0) {
-                    if (errno == EINTR) continue;
-                    goto error;
-                }
-                if (recvr == 0) {
-                    printf("server closed the connection\n");
                     break;
                 }
-                wbuf[recvr] = '\0';
-                char* newline = strchr(wbuf, '\n');
-                if (newline != NULL) {
-                    *newline = '\0';
-                } else {
+                // wait & then receive the reply from the server
+                recvr = recv_all(sockfd, wbuf, _BANK__BUF_SIZE);
+                if (recvr < 0) {
+                    break;
+                }
+                if (strchr(wbuf, '\n') == NULL) {
                     printf("invalid reply\n");
                     continue;
                 }
-                printf("%s\n", wbuf); // reply from the server
 
+                printf("%s\n", wbuf); // reply from the server
                 // if the server replied with the shutdown message
                 // break out of the event loop
                 if (strncmp(_BANK__SERVER_SHUTDOWN_MSG_PREFIX, wbuf, strlen(_BANK__SERVER_SHUTDOWN_MSG_PREFIX)) == 0)
@@ -140,11 +133,15 @@ int bank_client_udp(appmode_t* mode)
     int sendr;
     int recvr;
 
+    socklen_t saddr_len;
+
     struct sockaddr_in saddr = { 0 };
     struct pollfd pfd = { 0 };
 
     char* rbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
     char* wbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
+
+    saddr_len = sizeof(saddr);
 
     // create UDP socket
     if (getsockfd_udp(&sockfd) > 0)
@@ -153,58 +150,57 @@ int bank_client_udp(appmode_t* mode)
     
     // using connect with UDP ensures that I dont always need to 
     // pass the address around
-    connectr = connect(sockfd, (struct sockaddr*)&saddr, sizeof(saddr));
-    if (connectr < 0)
-        goto error;
+    // connectr = consock(sockfd, (struct sockaddr*)&saddr, sizeof(saddr));
+    // if (connectr < 0)
+    //    goto error;
 
     pfd.fd      = STDIN_FILENO; // stdin because we are waiting for user input (which is the message)
     pfd.events  = POLLIN;
     pfd.revents = 0;
     
-    printf("connection to server established entering poll loop.\n");
+    printf("entering poll loop.\n");
 
     do {
         pollr = poll(&pfd, 1, -1); // poll on stdin (messages)
         
         if (pollr > 0) {
-            if (pfd.revents & ( POLLNVAL | POLLERR | POLLHUP )) {
+            if (pfd.revents & ( POLLNVAL | POLLERR )) {
                 goto error; 
 
             } else if (pfd.revents & ( POLLIN )) {
                 memset(rbuf, 0, _BANK__BUF_SIZE);
                 memset(wbuf, 0, _BANK__BUF_SIZE);
 
-                readr = read(pfd.fd, rbuf, _BANK__BUF_SIZE - 1);
-                if (readr < 0)
-                    continue; // failed to read for this command
+                // read command from stdin
+                readr = readstdin(pfd.fd, rbuf, _BANK__BUF_SIZE);
+                if (readr < 0) {
+                    break;
+                }
                 if (readr == 0) {
                     break;
                 }
-                rbuf[readr] = '\0';
-
-                sendr = send(sockfd, rbuf, readr, 0); // TCP implications
+                // UDP send command the the server
+                sendr = sendto_all(sockfd, rbuf, readr,
+                    (struct sockaddr*)&saddr, saddr_len);
                 if (sendr < 0) {
+                    break;
                 }
-
-                recvr = recv(sockfd, wbuf, _BANK__BUF_SIZE - 1, 0);
+                // wait & then receive the reply from the server
+                recvr = recvfrom_all(sockfd, wbuf, _BANK__BUF_SIZE,
+                    (struct sockaddr*)&saddr, &saddr_len);
                 if (recvr < 0) {
-                    if (errno == EINTR) continue;
-                    goto error;
+                    break;
                 }
                 if (recvr == 0) {
                     printf("server closed the connection\n");
                     break;
                 }
-                wbuf[recvr] = '\0';
-                char* newline = strchr(wbuf, '\n');
-                if (newline != NULL) {
-                    *newline = '\0';
-                } else {
+                if (strchr(wbuf, '\n') == NULL) {
                     printf("invalid reply\n");
                     continue;
                 }
-                printf("%s\n", wbuf); // reply from the server
 
+                printf("%s\n", wbuf); // reply from the server
                 // if the server replied with the shutdown message
                 // break out of the event loop
                 if (strncmp(_BANK__SERVER_SHUTDOWN_MSG_PREFIX, wbuf, strlen(_BANK__SERVER_SHUTDOWN_MSG_PREFIX)) == 0)

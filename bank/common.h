@@ -111,5 +111,19 @@ send wrapper handle common interrupts, and line end message delimination.
 */
 ssize_t send_all(int fd, char* buf, ssize_t buf_len);
 
+/**
+read wrapper to handle common interrupts
+    `EINTR` retry
+    otherwise legitimate error is encountered & we abandon the message
+*/
+ssize_t readstdin(int fd, char* buf, size_t buf_len);
+
+/**
+connect wrapper handle common interrupts
+    `EINTR` retry
+    otherwise legitimate error is encountered & we abandon connection attempt
+*/
+int consock(int fd, const struct sockaddr* saddr, socklen_t saddr_len);
+
 #endif
 
