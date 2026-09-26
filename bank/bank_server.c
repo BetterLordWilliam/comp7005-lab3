@@ -154,6 +154,8 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
                     continue;
                 }
             } else {
+                if (errno == EINTR)
+                    continue;
                 printf("error with poll\n");
                 goto error;
             } // don't have to handle timeout because timeout is infinite
@@ -272,6 +274,8 @@ int bank_server_udp(appmode_t* am, bank_t* bank)
             }
 
         } else {
+            if (errno == EINTR)
+                continue;
             printf("error with poll\n");
             goto error;
         } // don't have to handle timeout because timeout is infinite
