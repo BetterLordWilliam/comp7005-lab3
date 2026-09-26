@@ -82,7 +82,7 @@ recvfrom wrapper handle common interrupts.
     `EINTR` retry the recvfrom
     otherwise legitimate error is encountered & we abandon the message
 
-reads as a valid string
+reads as a valid string (handles insertting '\0' at after last read byte)
 */
 ssize_t recvfrom_all(int fd, char* buf, ssize_t buf_len,
     struct sockaddr* saddr, socklen_t* saddr_len);
@@ -95,11 +95,12 @@ ssize_t sendto_all(int fd, char* buf, ssize_t buf_len,
     struct sockaddr* saddr, socklen_t saddr_len);
 
 /**
-recv wrapper handle common interripts & line end message delimination.
+recv wrapper handle common interripts & potential incomplete messages & line end message delimination.
     `EINTR` retry
     otherwise legitimate error is encountered & we abandon the message
 
-reads as a valid string
+reads as a valid string (handles inserting '\0' after last read byte)
+stops reading after encountering '\n'
 */
 ssize_t recv_all(int fd, char* buf, ssize_t buf_len);
 
