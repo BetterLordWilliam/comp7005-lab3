@@ -101,9 +101,9 @@ valid range of ports, defined as follows:
 #define _BANK__PORT_MAX (65535)
 ```
 
-If `mode.proto` is evaluated to be `TCP`, then `bank_server_tcp` is invoked.
+If `mode.proto` is evaluated to be `TCP`, then `bank_client_tcp` is invoked.
 
-If `mode.proto` is evaluated to be `UDP`, then `bank_server_udp` is invoked.
+If `mode.proto` is evaluated to be `UDP`, then `bank_client_udp` is invoked.
 
 ### Server (main)
 
