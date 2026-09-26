@@ -99,14 +99,14 @@ int bank_client_tcp(appmode_t* mode)
     
                 continue;
             }
-
+        } else if (pollr == 0) {
+            continue;
         } else {
             if (errno == EINTR)
                 continue;
             printf("error with poll\n");
             goto error;
-        } // don't have to handle timeout because timeout is infinite
-        printf("uh oh\n");
+        }
     } while (1);
 
     if (sockfd > 0)
@@ -209,16 +209,14 @@ int bank_client_udp(appmode_t* mode)
     
                 continue;
             }
-
+        } else if (pollr == 0) {
+            continue;
         } else {
             if (errno == EINTR)
                 continue;
             printf("error with poll\n");
             goto error;
-        } // don't have to handle timeout because timeout is infinite
-
-        printf("uh oh\n");
-
+        }
     } while (1);
 
     printf("client program terminating\n");

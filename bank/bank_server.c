@@ -100,7 +100,7 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
         goto error;
 
     // tcp listen for connections w/ queue size 1
-    listenr = listen(sockfd, 1); // double check connection queue size
+    listenr = listen(sockfd, 1);
     if (listenr != 0)
         goto error;
 
@@ -138,15 +138,14 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
                         printf("server read EOF from socket connection connection closed\n");
                         break;
                     }
-                    // check if the command is valid, ignore it if it isnt
+                    // check if the command is valid
+                    // terminate the connection if the command is not valid
                     if (strchr(rbuf, '\n') == NULL) {
                         printf("invalid command\n");
-                        continue;
+                        break;
                     }
-
                     // app logic (common)
                     bank_processing(bank, rbuf, wbuf);
-
                     // send the reply
                     sendr = send_all(pfd.fd, wbuf, (ssize_t)strlen(wbuf));
                     if (sendr < 0) {
@@ -161,15 +160,14 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
 
                     continue;
                 }
+            } else if (pollr == 0) {
+                continue;
             } else {
                 if (errno == EINTR)
                     continue;
                 printf("error with poll\n");
                 goto error;
-            } // don't have to handle timeout because timeout is infinite
-
-            printf("uh oh\n");
-
+            }
         } while (1);
 
         close(consockfd);
@@ -281,16 +279,14 @@ int bank_server_udp(appmode_t* am, bank_t* bank)
 
                 continue;
             }
-
+        } else if (pollr == 0) {
+            continue;
         } else {
             if (errno == EINTR)
                 continue;
             printf("error with poll\n");
             goto error;
-        } // don't have to handle timeout because timeout is infinite
-
-        printf("uh oh\n");
-
+        }
     } while (1);
 
     printf("server program terminating\n");
