@@ -123,36 +123,38 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
 
                     // read incomming message into buffer
                     // tcp implications
-                    readr = recv(pfd.fd, rbuf, _BANK__BUF_SIZE - 1, 0);
+                    // readr = recv(pfd.fd, rbuf, _BANK__BUF_SIZE - 1, 0);
+                    readr = recv_all(pfd.fd, rbuf, (ssize_t)_BANK__BUF_SIZE);
                     if (readr < 0) {
-                        if (errno == EINTR) continue;
                         printf("error reading from client socket closing connection\n");
                         break;
                     } else if (readr == 0) {
-                        printf("server read EOF from tcp socket connection closed\n");
+                        printf("server read EOF from socket connection connection closed\n");
                         break;
                     }
-                    rbuf[readr] = '\0';
-                    
-                    // scan for the newline sentinel & truncate
-                    char* newline = strchr(rbuf, '\n');
-                    if (newline != NULL)
-                        *newline  = '\0';
-                    else {
+                    // check if the command is valid, ignore it if it isnt
+                    if (strchr(rbuf, '\n') == NULL) {
                         printf("invalid command\n");
-                        continue; // no new line, not valid command
+                        continue;
                     }
 
                     // printf("%s", rbuf);
 
                     // app logic (common)
                     bank_processing(bank, rbuf, wbuf);
-                    // send the reply
-                    sendr = send(pfd.fd, wbuf, strlen(wbuf), 0);  // ERROR HANDLING
 
-                    // time to end the server
-                    if (bank->should_quit)
+                    // send the reply
+                    // sendr = send(pfd.fd, wbuf, strlen(wbuf), 0);  // ERROR HANDLING
+                    sendr = send_all(pfd.fd, wbuf, (ssize_t)strlen(wbuf));
+                    if (sendr < 0) {
+                        printf("error writing to client socket closing connection\n");
                         break;
+                    }
+                    // time to end the server
+                    if (bank->should_quit) {
+                        printf("QUIT command received closing connection & terminating server\n");
+                        break;
+                    }
 
                     continue;
                 }
