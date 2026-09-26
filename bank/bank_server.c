@@ -123,7 +123,6 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
 
                     // read incomming message into buffer
                     // tcp implications
-                    // readr = recv(pfd.fd, rbuf, _BANK__BUF_SIZE - 1, 0);
                     readr = recv_all(pfd.fd, rbuf, (ssize_t)_BANK__BUF_SIZE);
                     if (readr < 0) {
                         printf("error reading from client socket closing connection\n");
@@ -138,13 +137,10 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
                         continue;
                     }
 
-                    // printf("%s", rbuf);
-
                     // app logic (common)
                     bank_processing(bank, rbuf, wbuf);
 
                     // send the reply
-                    // sendr = send(pfd.fd, wbuf, strlen(wbuf), 0);  // ERROR HANDLING
                     sendr = send_all(pfd.fd, wbuf, (ssize_t)strlen(wbuf));
                     if (sendr < 0) {
                         printf("error writing to client socket closing connection\n");
@@ -244,30 +240,42 @@ int bank_server_udp(appmode_t* am, bank_t* bank)
                 memset(rbuf, 0, _BANK__BUF_SIZE);
                 memset(wbuf, 0, _BANK__BUF_SIZE);
 
-                readr = recvfrom(sockfd, rbuf, _BANK__BUF_SIZE, 0,
-                    (struct sockaddr*)&caddr, &caddr_len);
+                // readr = recvfrom(sockfd, rbuf, _BANK__BUF_SIZE, 0,
+                //     (struct sockaddr*)&caddr, &caddr_len);
+                // if (readr == -1) {
+                //    if (errno == EINTR) continue;
+                //    break;
+                // }
 
-                if (readr == -1) {
-                    if (errno == EINTR) continue;
-                    break;
+                readr = recvfrom_all(pfd.fd, rbuf, _BANK__BUF_SIZE,
+                    (struct sockaddr*)&caddr, &caddr_len);
+                if (readr < 0) {
+                    printf("there was an error reading the clients message\n");
+                    continue;
+                }
+                if (strchr(rbuf, '\n') == NULL) {
+                    printf("invalid command\n");
+                    continue;
                 }
                 
-                // read incomming message into buffer
-                rbuf[readr] = '\0';
                 // app logic (common)
                 bank_processing(bank, rbuf, wbuf);
-                // send the reply
-                sendr = sendto(sockfd, wbuf, strlen(wbuf), 0,
-                    (struct sockaddr*)&caddr, caddr_len);
 
-                if (sendr == -1) {
-                    if (errno == EINTR) continue;
-                    break;
+                // send the reply
+                // sendr = sendto(sockfd, wbuf, strlen(wbuf), 0,
+                //    (struct sockaddr*)&caddr, caddr_len);
+                sendr = sendto_all(pfd.fd, wbuf, strlen(wbuf),
+                    (struct sockaddr*)&caddr, caddr_len);
+                if (sendr < 0) {
+                    printf("there was an error sending reply message to the client\n");
+                    continue;
                 }
 
                 // time to end the server
-                if (bank->should_quit)
+                if (bank->should_quit) {
+                    printf("quit command recieved terminating server\n");
                     break;
+                }
 
                 continue;
             }

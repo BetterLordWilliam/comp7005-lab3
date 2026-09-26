@@ -85,23 +85,38 @@ int bindsock(int fd, struct sockaddr* sockaddr, socklen_t addrlen)
 }
 
 
-int recvfrom_all(int fd, char* buf, size_t buf_len,
+ssize_t recvfrom_all(int fd, char* buf, ssize_t buf_len,
     struct sockaddr* saddr, socklen_t* saddr_len)
 {
+    ssize_t received = 0;
     do {
+        received = recvfrom(fd, buf, (size_t)buf_len, 0, saddr, saddr_len);
+        if (received < 0) {
+            if (errno == EINTR)
+                continue;
+            return -1;
+        }
+        buf[received] = '\0';
         break;
     } while (1);
-    return 0;
+    return received;
 }
 
 
-int sendto_all(int fd, char* buf, size_t buf_len,
+ssize_t sendto_all(int fd, char* buf, ssize_t buf_len,
     struct sockaddr* saddr, socklen_t saddr_len)
 {
+    ssize_t sent = 0;
     do {
-        break;
+        sent = sendto(fd, buf, (size_t)buf_len, 0, saddr, saddr_len);
+        if (sent < 0) {
+            if (errno == EINTR)
+                continue;
+            return -1;
+        }
+        break; 
     } while (1);
-    return 0;
+    return sent;
 }
 
 
@@ -139,6 +154,6 @@ ssize_t send_all(int fd, char* buf, ssize_t buf_len)
         }
         sent += n;
     } while (sent < buf_len);
-    return 0;
+    return sent;
 }
 

@@ -84,14 +84,14 @@ recvfrom wrapper handle common interrupts.
 
 reads as a valid string
 */
-int revcfrom_all(int fd, char* buf, size_t buf_len,
+ssize_t recvfrom_all(int fd, char* buf, ssize_t buf_len,
     struct sockaddr* saddr, socklen_t* saddr_len);
 /**
 sendto wrapper handle commond interrupts.
     `EINTR` retry the sendto
     otherwise legitimate error is encountered & we abandon the message
 */
-int sendto_all(int fd, char* buf, size_t buf_len,
+ssize_t sendto_all(int fd, char* buf, ssize_t buf_len,
     struct sockaddr* saddr, socklen_t saddr_len);
 
 /**
