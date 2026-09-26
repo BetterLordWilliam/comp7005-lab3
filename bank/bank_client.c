@@ -243,10 +243,6 @@ error:
 int main(int argc, char** argv)
 {
     int pport;
-    int done;
-    
-    // client state (just track if we are done or not) 
-    done = 0;
 
     // initialize application mode all fields to 0
     appmode_t mode = { 0 };
