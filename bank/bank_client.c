@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <errno.h>
 #include <unistd.h>
 #include <poll.h>
 #include <sys/socket.h>
@@ -112,18 +113,40 @@ int main(int argc, char** argv)
                 goto error; 
 
             } else if (pfd.revents & ( POLLIN )) {
-                readr = read(pfd.fd, rbuf, _BANK__BUF_SIZE);
+                memset(rbuf, 0, _BANK__BUF_SIZE);
+                memset(wbuf, 0, _BANK__BUF_SIZE);
+
+                readr = read(pfd.fd, rbuf, _BANK__BUF_SIZE - 1);
                 if (readr < 0)
                     continue; // failed to read for this command
                 if (readr == 0) {
                     break;
                 }
                 rbuf[readr] = '\0';
-                sendr = send(sockfd, rbuf, _BANK__BUF_SIZE, 0);
-                recvr = recv(sockfd, wbuf, _BANK__BUF_SIZE, 0);
 
+                sendr = send(sockfd, rbuf, readr, 0); // TCP implications
+                if (sendr < 0) {
+                }
+
+                recvr = recv(sockfd, wbuf, _BANK__BUF_SIZE - 1, 0);
+                if (recvr < 0) {
+                    if (errno == EINTR) continue;
+                    goto error;
+                }
+                if (recvr == 0) {
+                    printf("server closed the connection\n");
+                    break;
+                }
+                wbuf[recvr] = '\0';
+                char* newline = strchr(wbuf, '\n');
+                if (newline != NULL) {
+                    *newline = '\0';
+                } else {
+                    printf("invalid reply\n");
+                    continue;
+                }
                 printf("%s\n", wbuf); // reply from the server
-                
+
                 // if the server replied with the shutdown message
                 // break out of the event loop
                 if (strncmp(_BANK__SERVER_SHUTDOWN_MSG_PREFIX, wbuf, strlen(_BANK__SERVER_SHUTDOWN_MSG_PREFIX)) == 0)

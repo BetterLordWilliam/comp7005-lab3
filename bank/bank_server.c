@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <poll.h>
+#include <errno.h>
 #include <sys/socket.h>
 #include <netinet/ip.h>
 #include <netinet/in.h>
@@ -21,36 +22,36 @@ Takes message from the client & processes the request writes a response message.
     char* response
 */
 void bank_processing(bank_t* bank, const char* request, char* response) {
-    // printf("%s\n", request);
-    int t;
+    int t = -1;
 
     if (strncmp(_BANK__BALANCE_MSG_PREFIX,
             request, strlen(_BANK__BALANCE_MSG_PREFIX)) == 0) {
 
-        sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d",
+        sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d\n",
             bank->balance);
 
     } else if (strncmp(_BANK__DEPOSIT_MSG_PREFIX,
             request, strlen(_BANK__DEPOSIT_MSG_PREFIX)) == 0) {
 
         sscanf(request, _BANK__DEPOSIT_MSG_PREFIX "  %d", &t);
-        bank->balance += t;
-        sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d",
+        if (t > 0)
+            bank->balance += t;
+        sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d\n",
             bank->balance);
 
     } else if (strncmp(_BANK__WITHDRAW_MSG_PREFIX,
             request, strlen(_BANK__WITHDRAW_MSG_PREFIX)) == 0) {
 
         sscanf(request, _BANK__WITHDRAW_MSG_PREFIX " %d", &t);
-        if (t < bank->balance)
+        if (t > 0 && t < bank->balance)
             bank->balance -= t;
-        sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d",
+        sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d\n",
             bank->balance);
 
     } else if (strncmp(_BANK__QUIT_MSG,
             request, strlen(_BANK__QUIT_MSG)) == 0) {
 
-        sprintf(response, _BANK__SERVER_SHUTDOWN_MSG_PREFIX);
+        sprintf(response, _BANK__SERVER_SHUTDOWN_MSG_PREFIX "\n");
         bank->should_quit = 1;
 
     } else {
@@ -96,44 +97,79 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
     if (listenr != 0)
         goto error;
 
-    // tcp connection acceptance
-    consockfd = accept(sockfd, NULL, NULL); // block me until connection is made, returns new connection fd
-    if (consockfd < 0)
-        goto error;
-    
-    // tcp connection poll loop
-    pfd.fd      = consockfd;
-    pfd.events  = POLLIN;
-    pfd.revents = 0;
-
+    // tcp server loop 
     do {
-        pollr = poll(&pfd, 1, -1);
+        // tcp connection acceptance (1 client at a time)
+        consockfd = accept(sockfd, NULL, NULL); // block me until connection is made, returns new connection fd
+        if (consockfd < 0) continue; // retry if connection fails
+        
+        // tcp connection poll loop
+        pfd.fd      = consockfd;
+        pfd.events  = POLLIN;
+        pfd.revents = 0;
+        
+        do {
+            pollr = poll(&pfd, 1, -1);
 
-        // handle poll stuff
-        if (pollr > 0) {
-            if (pfd.revents & ( POLLNVAL | POLLERR | POLLHUP ))  {
-                goto error;
-            } else {
-                readr = recv(pfd.fd, rbuf, _BANK__BUF_SIZE, 0);    // PROPER ERROR HANDLING
-                
-                // read incomming message into buffer
-                rbuf[readr] = '\0';
-                // app logic (common)
-                bank_processing(bank, rbuf, wbuf);
-                // send the reply
-                sendr = send(pfd.fd, wbuf, _BANK__BUF_SIZE, 0);  // PROPER ERROR HANDLING
-                // time to end the server
-                if (bank->should_quit)
+            // handle poll stuff
+            if (pollr > 0) {
+                if (pfd.revents & ( POLLNVAL | POLLERR ))  {
+                    goto error;
+                } else if (pfd.revents & ( POLLHUP )) {
                     break;
+                } else {
+                    memset(rbuf, 0, _BANK__BUF_SIZE);
+                    memset(wbuf, 0, _BANK__BUF_SIZE);
 
-                continue;
-            }
-        } else {
-            printf("error with poll\n");
-            goto error;
-        } // don't have to handle timeout because timeout is infinite
+                    // read incomming message into buffer
+                    // tcp implications
+                    readr = recv(pfd.fd, rbuf, _BANK__BUF_SIZE - 1, 0);
+                    if (readr < 0) {
+                        if (errno == EINTR) continue;
+                        printf("error reading from client socket closing connection\n");
+                        break;
+                    } else if (readr == 0) {
+                        printf("server read EOF from tcp socket connection closed\n");
+                        break;
+                    }
+                    rbuf[readr] = '\0';
+                    
+                    // scan for the newline sentinel & truncate
+                    char* newline = strchr(rbuf, '\n');
+                    if (newline != NULL)
+                        *newline  = '\0';
+                    else {
+                        printf("invalid command\n");
+                        continue; // no new line, not valid command
+                    }
 
-        printf("uh oh\n");
+                    // printf("%s", rbuf);
+
+                    // app logic (common)
+                    bank_processing(bank, rbuf, wbuf);
+                    // send the reply
+                    sendr = send(pfd.fd, wbuf, strlen(wbuf), 0);  // ERROR HANDLING
+
+                    // time to end the server
+                    if (bank->should_quit)
+                        break;
+
+                    continue;
+                }
+            } else {
+                printf("error with poll\n");
+                goto error;
+            } // don't have to handle timeout because timeout is infinite
+
+            printf("uh oh\n");
+
+        } while (1);
+
+        close(consockfd);
+        
+        // time to end the server 
+        if (bank->should_quit)
+            break;
 
     } while (1);
 
