@@ -20,7 +20,7 @@ Takes message from the client & processes the request writes a response message.
     char* request
     char* response
 */
-int bank_processing(bank_t* bank, const char* request, char* response) {
+void bank_processing(bank_t* bank, const char* request, char* response) {
     printf("%s\n", request);
     int t;
 
@@ -56,8 +56,6 @@ int bank_processing(bank_t* bank, const char* request, char* response) {
     } else {
         printf("unknown message type received\n");
     }
-
-    return 0; 
 }
 
 
@@ -71,8 +69,9 @@ enum ret_bankserver {
 */
 int bank_server_tcp(appmode_t* am, bank_t* bank)
 {
-    int sockfd;
-    int consockfd;
+    int sockfd = -1;
+    int consockfd = -1;
+
     int listenr;
     int acceptr;
     int pollr;
@@ -139,9 +138,11 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
     } while (1);
 
     printf("server program terminating\n");
-
-    close(sockfd);
-    close(consockfd);
+    
+    if (sockfd >= 0)
+        close(sockfd);
+    if (consockfd >= 0)
+        close(consockfd);
     free(rbuf);
     free(wbuf);
 
@@ -149,9 +150,11 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
 
 error:
     printf("there was an error running the server quitting server event loop\n");
-
-    close(sockfd);
-    close(consockfd);
+    
+    if (sockfd >= 0)
+        close(sockfd);
+    if (consockfd >= 0)
+        close(consockfd);
     free(rbuf);
     free(wbuf);
 
@@ -162,8 +165,8 @@ error:
 */
 int bank_server_udp(appmode_t* am, bank_t* bank)
 {
-    int sockfd;
-    int consockfd;
+    int sockfd = -1;
+
     int listenr;
     int acceptr;
     int pollr;
@@ -230,8 +233,9 @@ int bank_server_udp(appmode_t* am, bank_t* bank)
     } while (1);
 
     printf("server program terminating\n");
-    
-    close(sockfd);
+
+    if (sockfd >= 0) 
+        close(sockfd);
     free(rbuf);
     free(wbuf);
 
@@ -240,7 +244,8 @@ int bank_server_udp(appmode_t* am, bank_t* bank)
 error:
     printf("there was an error running the server quitting server event loop\n");
 
-    close(sockfd);
+    if (sockfd >= 0)
+        close(sockfd);
     free(rbuf);
     free(wbuf);
 
