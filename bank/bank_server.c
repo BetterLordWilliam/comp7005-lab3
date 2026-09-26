@@ -51,6 +51,7 @@ int bank_processing(bank_t* bank, const char* request, char* response) {
             request, strlen(_BANK__QUIT_MSG)) == 0) {
 
         sprintf(response, _BANK__SERVER_SHUTDOWN_MSG_PREFIX);
+        bank->should_quit = 1;
 
     } else {
         printf("unknown message type received\n");
@@ -121,6 +122,11 @@ int bank_server_tcp(appmode_t* am, bank_t* bank)
 
                 // send the reply
                 sendr = send(pfd.fd, wbuf, _BANK__BUF_SIZE, 0);  // PROPER ERROR HANDLING
+                
+                // time to end the server
+                if (bank->should_quit)
+                    break;
+
                 continue;
             }
         } else {
@@ -206,6 +212,11 @@ int bank_server_udp(appmode_t* am, bank_t* bank)
                 // send the reply
                 sendr = sendto(sockfd, wbuf, _BANK__BUF_SIZE, 0,
                     (struct sockaddr*)&caddr, caddr_len); // PROPER ERROR HANDLING
+                
+                // time to end the server
+                if (bank->should_quit)
+                    break;
+
                 continue;
             }
 

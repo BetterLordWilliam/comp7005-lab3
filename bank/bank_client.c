@@ -25,6 +25,10 @@ int main(int argc, char** argv)
     int readr;
     int sendr;
     int recvr;
+    int done;
+    
+    // client state (just track if we are done or not) 
+    done = 0;
 
     char* rbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
     char* wbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
@@ -104,10 +108,6 @@ int main(int argc, char** argv)
         pollr = poll(&pfd, 1, -1); // poll on stdin (messages)
         
         if (pollr > 0) {
-            // printf("user entered message\n");
-            // figure out what the revent is from `poll` & act accordingly
-            // invalid value means error exit
-
             if (pfd.revents & ( POLLNVAL | POLLERR | POLLHUP )) {
                 goto error; 
 
@@ -123,7 +123,11 @@ int main(int argc, char** argv)
                 recvr = recv(sockfd, wbuf, _BANK__BUF_SIZE, 0);
 
                 printf("%s\n", wbuf); // reply from the server
-                // TODO parse server reply (if its the BYE one I should kill myself -- process)
+                
+                // if the server replied with the shutdown message
+                // break out of the event loop
+                if (strncmp(_BANK__SERVER_SHUTDOWN_MSG_PREFIX, wbuf, strlen(_BANK__SERVER_SHUTDOWN_MSG_PREFIX)) == 0)
+                    break;
     
                 continue;
             }

@@ -43,6 +43,7 @@ struct appmode {
 
 struct bank {
     int balance;
+    int should_quit;
 } typedef bank_t;
 
 
