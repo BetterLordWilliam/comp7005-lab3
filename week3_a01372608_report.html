@@ -4,6 +4,35 @@
 <p>This report describes my implementation of the week3 bank server lab.</p>
 <h2 id="obtaining-a-program-binary">Obtaining a Program Binary</h2>
 <p>This section describes how to compile the project.</p>
+<p>There are two relevant <a href="./makefile">makefile</a> recipes, <code>build</code> &amp; <code>clean</code></p>
+<pre><code class="language-bash">make build
+</code></pre>
+<blockquote>
+<p>This will create the binary in a <code>./build</code> directory</p>
+</blockquote>
+<pre><code class="language-bash">make clean
+</code></pre>
+<blockquote>
+<p>This will remove the current contents of the <code>./build</code> directory</p>
+</blockquote>
+<blockquote>
+<p>You can ignore the <code>run-both</code> recipe I was experimenting w/ stuff.</p>
+</blockquote>
+<p>The output binaries are <code>./build/bank-server</code> &amp; <code>./build/bank-client</code> respectively &amp; should be started as follows:</p>
+<p><em>TCP examples</em></p>
+<pre><code class="language-bash">./build/bank-server tcp 1234
+
+# or background
+./build/bank-server tcp 1234 &amp;
+./build/bank-client tcp 1234
+</code></pre>
+<p><em>UDP examples</em></p>
+<pre><code class="language-bash">./build/bank-server udp 1234
+
+# or background
+./build/bank-server udp 1234
+./build/bank-client udp 1234
+</code></pre>
 <h2 id="implementation">Implementation</h2>
 <p>This section describes how the programs (client &amp; server) were implemented
 for use with TCP protocol &amp; UDP protocol.</p>
