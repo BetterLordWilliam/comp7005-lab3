@@ -18,7 +18,7 @@ for use with TCP protocol & UDP protocol.
 
 ### Client (main)
 
-![client-main](./screenshots/client-main.c)
+![client-main](./screenshots/client-main.png)
 
 ```c
 int main(int argc, char** argv)
@@ -108,7 +108,7 @@ If `mode.proto` is evaluated to be `UDP`, then `bank_client_udp` is invoked.
 ### Server (main)
 
 
-![server-main](./screenshots/server-main.c)
+![server-main](./screenshots/server-main.png)
 
 ```c
 int main(int argc, char** argv)
@@ -193,7 +193,13 @@ The following sections describe the implementation of the TCP client.
 
 #### TCP Client setup/teardown
 
-![tcp-client-setup-error](./screenshots/tcp-client-setup-error.png)
+*setup*
+
+![tcp-client-setup-error](./screenshots/tcp-client-setup-error-1.png)
+
+*teardown & error handling*
+
+![tcp-client-setup-error](./screenshots/tcp-client-setup-error-2.png)
 
 ```c
 int bank_client_tcp(appmode_t* mode)
@@ -291,7 +297,7 @@ has the initialized value of -1). `rbuf` & `wbuf` are freed as well.
 
 #### TCP Client event loop
 
-![tcp-client-successful-poll-handling](./screenshots/tcp-client-successful-poll-handling.png)
+![tcp-client-successful-poll-handling](./screenshots/tcp-client-event-loop.png)
 
 ```c
 int bank_client_tcp(appmode_t* mode)
@@ -390,7 +396,15 @@ The following sections describe the implementation of the TCP server.
 
 #### TCP Server setup/teardown
 
-![tcp-server-setup-error](./screenshots/tcp-server-setup-error.png)
+*setup*
+
+![tcp-server-setup-error-1](./screenshots/tcp-server-setup-error-1.png)
+
+*teardown & error handling*
+
+![tcp-server-setup-error-2](./screenshots/tcp-client-setup-error-2.png)
+
+
 ```c
 /**
 bank server implementation with sock_stream (TCP) underlying protocol.
@@ -470,7 +484,7 @@ if they were then they are closed. The `rbuf` & `wbuf` are freed.
 
 #### TCP Server event loop
 
-![tcp-server-successful-poll-handling](./screenshots/tcp-server-successful-poll-handling.png)
+![tcp-server-successful-poll-handling](./screenshots/tcp-server-event-loop.png)
 ```c
 /**
 bank server implementation with sock_stream (TCP) underlying protocol.
@@ -586,7 +600,14 @@ The following sections describe the implementation of the UDP client.
 
 #### UDP Client setup/teardown
 
-![udp-client-setup-error](./screenshots/udp-client-setup-error.png)
+*setup*
+
+![udp-client-setup-error-1](./screenshots/udp-client-setup-error-1.png)
+
+*teardown & error handling*
+
+![udp-client-setup-error-2](./screenshots/udp-client-setup-error-2.png)
+
 ```c
 int bank_client_udp(appmode_t* mode)
 {
@@ -659,7 +680,7 @@ Regarding error handling & teardown, if `sockfd` was opened, then it is closed &
 
 #### UDP Client event loop
 
-![udp-client-successful-poll-handling](./screenshots/udp-client-successful-poll-handling.png)
+![udp-client-successful-poll-handling](./screenshots/udp-client-event-loop.png)
 ```c
 int bank_client_udp(appmode_t* mode)
 {
@@ -751,7 +772,16 @@ teardown begins).
 The following sections describe the implementation of the UDP server.
 
 #### UDP Server setup/teardown
-![udp-server-setup-error](./screenshots/udp-server-setup-error.png)
+
+*setup*
+
+![udp-setup-1](./screenshots/udp-server-setup-error-1.png)
+
+*teardown & error handling*
+
+![udp-setup-2](./screenshots/udp-server-setup-error-2.png)
+
+
 ```c
 /**
 bank server implementation with sock_dgram (UDP) underlying protocol.
@@ -830,7 +860,9 @@ the `sockfd` if it was opened & freeing the `rbuf` & `wbuf` buffers.
 
 
 #### UDP Server event loop
-![udp-server-successful-poll-handling](./screenshots/udp-server-successful-poll-handling.png)
+
+![udp-server-successful-poll-handling](./screenshots/udp-server-event-loop.png)
+
 ```c
 /**
 bank server implementation with sock_dgram (UDP) underlying protocol.
@@ -918,10 +950,11 @@ Once the `rbuf` is populated, either protocol must process messages in the same 
 & write replies in the same way to `wbuf`, so this is abstracted to the `bank_processing`
 function.
 
-![tcp-server-message-processing](./screenshots/tcp-server-message-processing.png)
+![tcp-server-message-processing](./screenshots/server-processing.png)
 ```c
-/** 
- writes a response message.
+/**
+Takes message from the client & processes the request
+& writes a response message.
     bank_t* bank pointer to bank struct (bank state)
     char* request
     char* response
