@@ -588,15 +588,163 @@ The following sections describe the implementation of the UDP client.
 
 ![udp-client-setup-error](./screenshots/udp-client-setup-error.png)
 ```c
+int bank_client_udp(appmode_t* mode)
+{
+    int sockfd = -1;
+    int connectr;
+    int pollr;
+    int readr;
+    int sendr;
+    int recvr;
 
+    socklen_t saddr_len;
+    socklen_t paddr_len;
+
+    struct sockaddr_in saddr = { 0 };
+    struct sockaddr_in paddr = { 0 }; // write reply address to this instead of the servers known address
+    struct pollfd pfd = { 0 };
+
+    char* rbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
+    char* wbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
+
+    saddr_len = sizeof(saddr);
+    paddr_len = sizeof(paddr);
+
+    // create UDP socket
+    if (getsockfd_udp(&sockfd) > 0)
+        goto error;
+    setsockaddr_lb(&saddr, mode->port); // sockaddr -> lb:port
+
+    pfd.fd      = STDIN_FILENO; // stdin because we are waiting for user input (which is the message)
+    pfd.events  = POLLIN;
+    pfd.revents = 0;
+
+    printf("entering poll loop.\n");
+
+    do {
+        // event loop ...
+    } while (1);
+
+    printf("client program terminating\n");
+
+    if (sockfd > 0)
+        close(sockfd);
+
+    free(rbuf);
+    free(wbuf);
+
+    return BANKCLIENT_OK;
+
+error:
+    if (sockfd > 0)
+        close(sockfd);
+
+    free(rbuf);
+    free(wbuf);
+
+    return BANKCLIENT_ERR;
+}
 ```
+
+Similar to the TCP client, except there is no need to invoke `connect` on the
+socket & the socket is created using the `getsockfd_udp` helper
+setting `SOCK_DGRAM` as the type.
+
+Poll is again setup w/ STDIN as this is still where we are expecting the 
+messages to come from.
+
+Regarding error handling & teardown, if `sockfd` was opened, then it is closed & the buffers
+`rbuf` & `wbuf` are freed.
+
 
 #### UDP Client event loop
 
 ![udp-client-successful-poll-handling](./screenshots/udp-client-successful-poll-handling.png)
 ```c
+int bank_client_udp(appmode_t* mode)
+{
+    // setup ...
+    do {
+        pollr = poll(&pfd, 1, -1); // poll on stdin (messages)
 
+        if (pollr > 0) {
+            if (pfd.revents & ( POLLNVAL | POLLERR )) {
+                goto error;
+
+            } else if (pfd.revents & ( POLLIN )) {
+                memset(rbuf, 0, _BANK__BUF_SIZE);
+                memset(wbuf, 0, _BANK__BUF_SIZE);
+
+                // read command from stdin
+                readr = readstdin(pfd.fd, rbuf, _BANK__BUF_SIZE);
+                if (readr < 0) {
+                    break;
+                }
+                if (readr == 0) {
+                    break;
+                }
+                // UDP send command the the server
+                sendr = sendto_all(sockfd, rbuf, readr,
+                    (struct sockaddr*)&saddr, saddr_len);
+                if (sendr < 0) {
+                    break;
+                }
+                // wait & then receive the reply from the server
+                recvr = recvfrom_all(sockfd, wbuf, _BANK__BUF_SIZE,
+                    (struct sockaddr*)&paddr, &paddr_len);
+                if (recvr < 0) {
+                    break;
+                }
+                if (recvr == 0) {
+                    printf("server closed the connection\n");
+                    break;
+                }
+                if (strchr(wbuf, '\n') == NULL) {
+                    printf("invalid reply\n");
+                    continue;
+                }
+
+                printf("%s\n", wbuf); // reply from the server
+                // if the server replied with the shutdown message
+                // break out of the event loop
+                if (strncmp(_BANK__SERVER_SHUTDOWN_MSG_PREFIX, wbuf, strlen(_BANK__SERVER_SHUTDOWN_MSG_PREFIX)) == 0)
+                    break;
+
+                continue;
+            }
+        } else if (pollr == 0) {
+            continue;
+        } else {
+            if (errno == EINTR)
+                continue;
+            printf("error with poll\n");
+            goto error;
+        }
+    } while (1);
+    // error/teardown ...
+}
 ```
+`poll` is invoked with an infinite timeout, once `poll` returns, if the return
+indicates that there's data to be read, when we process it. Otherwise if 0
+is returned by `poll`, we go to the next iteration of the client processing loop
+& if an error is returned, we confirm its not from `EINTR`.
+
+STDIN is read into the `rbuf` via `readstdin` helper, but the message is then
+sent to the server using the `sendto_all` wrapper, which means the destination
+address `saddr` & its length must be passed as well. `sendto_all` handles writing
+the message to the server over the socket, the wrapper checks if there's an error
+that the error is `EINTR` & re-attempts, otherwise the message is assumed to be 
+sent in one go since this is UDP.
+
+After the message is successfully sent, the client begins waiting for a reply
+via `recvfrom_all` which does similar processing as `sendto_all` in that the
+message is retransmitted if the syscall results in an `EINTR` error, otherwise
+successful returns assume the entire message is sent (since this is UDP).
+
+The server's reply, written to `wbuf`, is printed & checked to see if its
+the termination message (which if it is, the client event loop is broken &
+teardown begins).
+
 
 ### UDP Server
 
@@ -605,14 +753,164 @@ The following sections describe the implementation of the UDP server.
 #### UDP Server setup/teardown
 ![udp-server-setup-error](./screenshots/udp-server-setup-error.png)
 ```c
+/**
+bank server implementation with sock_dgram (UDP) underlying protocol.
+*/
+int bank_server_udp(appmode_t* am, bank_t* bank)
+{
+    int sockfd = -1;
 
+    int listenr;
+    int acceptr;
+    int pollr;
+    int sendr;
+    int readr;
+
+    struct sockaddr_in saddr    = { 0 };
+    struct sockaddr_in caddr    = { 0 };        // peers address
+    struct pollfd pfd           = { 0 };
+
+    socklen_t caddr_len = sizeof(caddr);
+
+    char* rbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
+    char* wbuf = (char*)calloc(_BANK__BUF_SIZE, sizeof(char));
+
+    // udp socket setup
+    if (getsockfd_udp(&sockfd) > 0)
+        goto error;
+    setsockaddr_lb(&saddr, am->port); // sockaddr -> lb:port
+    if (bindsock(sockfd, (struct sockaddr*)&saddr, sizeof(saddr)))
+        goto error;
+
+    // socket poll loop
+    pfd.fd      = sockfd;
+    pfd.events  = POLLIN;
+    pfd.revents = 0;
+
+    do {
+        // event loop ...
+    } while (1);
+
+    printf("server program terminating\n");
+
+    if (sockfd >= 0)
+        close(sockfd);
+    free(rbuf);
+    free(wbuf);
+
+    return BANKSERV_OK;
+
+error:
+    printf("there was an error running the server quitting server event loop\n");
+
+    if (sockfd >= 0)
+        close(sockfd);
+    free(rbuf);
+    free(wbuf);
+
+    return BANKSERV_ERR;
+}
 ```
+
+UDP server setup unlike the TCP server setup involves no connection. The socket
+is acquired via `getsockfd_udp` & bound via `bindsock` to the loopback address
+& configured port in much the same way.
+
+`struct sockaddr_in` `caddr` is declared alongside the `socklen_t` `caddr_len`
+which is used when reading client messages as the variable which stores this
+particular clients address in order that replies be sent to them later.
+
+`rbuf` & `wbuf` are allocated again, for reading the incoming messages into &
+writing processed response messages to.
+
+`pfd` is setup w/ the bound socket & the event loop begins.
+
+If an error is detected during setup, the error processing involves closing 
+the `sockfd` if it was opened & freeing the `rbuf` & `wbuf` buffers.
+
 
 #### UDP Server event loop
 ![udp-server-successful-poll-handling](./screenshots/udp-server-successful-poll-handling.png)
 ```c
+/**
+bank server implementation with sock_dgram (UDP) underlying protocol.
+*/
+int bank_server_udp(appmode_t* am, bank_t* bank)
+{
+    // setup ...
+    do {
+        pollr = poll(&pfd, 1, -1);
 
+        // handle poll stuff
+        if (pollr > 0) {
+            if (pfd.revents & ( POLLNVAL | POLLERR ))  {        // POLLHUP not raised (UDP therefore no connection)
+                goto error;
+
+            } else {
+                memset(rbuf, 0, _BANK__BUF_SIZE);
+                memset(wbuf, 0, _BANK__BUF_SIZE);
+
+                // read message
+                readr = recvfrom_all(pfd.fd, rbuf, _BANK__BUF_SIZE,
+                    (struct sockaddr*)&caddr, &caddr_len);
+                if (readr < 0) {
+                    printf("there was an error reading the clients message\n");
+                    continue;
+                }
+                if (strchr(rbuf, '\n') == NULL) {
+                    printf("invalid command\n");
+                    continue;
+                }
+
+                // app logic (common)
+                bank_processing(bank, rbuf, wbuf);
+
+                // send the reply
+                sendr = sendto_all(pfd.fd, wbuf, strlen(wbuf),
+                    (struct sockaddr*)&caddr, caddr_len);
+                if (sendr < 0) {
+                    printf("there was an error sending reply message to the client\n");
+                    continue;
+                }
+
+                // time to end the server
+                if (bank->should_quit) {
+                    printf("quit command recieved terminating server\n");
+                    break;
+                }
+
+                continue;
+            }
+        } else if (pollr == 0) {
+            continue;
+        } else {
+            if (errno == EINTR)
+                continue;
+            printf("error with poll\n");
+            goto error;
+        }
+    } while (1);
+    // error/teardown ...
+}
 ```
+
+If the setup is successful, the UDP server event loop begins. Recall that
+`sockfd` was set as the target file descriptor to poll against. If `poll` returns
+some `n > 0` then there is a message to read from the client. Otherwise, if `poll`
+returns 0 (timeout) we continue awaiting incoming data & if there is an error
+with poll, first we check that its not the interrupt error & if its not then
+we jump to error processing.
+
+The message from the client is recieved via `recvfrom_all`, with the clients
+address being written to `caddr`. Upon successful reading of the message, its passed
+to `bank_processing` & the reply is written to `wbuf`. This reply is sent to the
+address saved in `caddr` via `sentdo_all`.
+
+If `bank_processing` determines that the message from the client was the 'QUIT'
+message, this is indicated in the `bank` struct `should_quit` field being set,
+if this is the case then the UDP server event loop is broken & the teardown
+procedure begins.
+
 
 ### TCP/UDP Server message processing
 
@@ -622,8 +920,71 @@ function.
 
 ![tcp-server-message-processing](./screenshots/tcp-server-message-processing.png)
 ```c
+ writes a response message.
+    bank_t* bank pointer to bank struct (bank state)
+    char* request
+    char* response
+*/
+void bank_processing(bank_t* bank, const char* request, char* response) {
+    int t = -1;
 
+    if (strncmp(_BANK__BALANCE_MSG_PREFIX,
+            request, strlen(_BANK__BALANCE_MSG_PREFIX)) == 0) {
+
+        sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d\n",
+            bank->balance);
+
+    } else if (strncmp(_BANK__DEPOSIT_MSG_PREFIX,
+            request, strlen(_BANK__DEPOSIT_MSG_PREFIX)) == 0) {
+
+        if (sscanf(request, _BANK__DEPOSIT_MSG_PREFIX "  %d", &t) == 1) {
+            bank->balance += t;
+            sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d\n",
+                bank->balance);
+        } else {
+            sprintf(response, "bad command\n");
+        }
+
+    } else if (strncmp(_BANK__WITHDRAW_MSG_PREFIX,
+            request, strlen(_BANK__WITHDRAW_MSG_PREFIX)) == 0) {
+
+        if (sscanf(request, _BANK__WITHDRAW_MSG_PREFIX " %d", &t) == 1) {
+            if (t <= bank->balance) {
+                bank->balance -= t;
+                sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d\n",
+                    bank->balance);
+            } else  {
+                sprintf(response, "ERR INSUFFICIENT_FUNDS\n");
+            }
+        } else {
+            sprintf(response, "bad command\n");
+        }
+
+    } else if (strncmp(_BANK__QUIT_MSG,
+            request, strlen(_BANK__QUIT_MSG)) == 0) {
+
+        sprintf(response, _BANK__SERVER_SHUTDOWN_MSG_PREFIX "\n");
+        bank->should_quit = 1;
+
+    } else {
+        sprintf(response, "unknown message type\n");
+    }
+}
 ```
+
+Messages are processed from `rbuf`, in this method `request`, the lexicon
+is defined using macros & prefix matching is used to determine which
+message has been passed.
+
+For the messages that accept some number input, `sscanf` is used to extract
+this value to the `int` `t`, if this is successful then the corresponding
+operation (deposit -> addition, withdraw -> subtraction) is performed against
+the `bank_t` `bank` struct, whose address is an input to the function. In the
+case of withdrawing, firstly it is determined whether the amount being withdrawn
+exceeds that which is in the bank. If so, then an error message is written to
+`wbuf`. Writing messages to `wbuf` is done via `sprintf`, which can similarily to
+`sscanf` use format strings with the current value of the bank balance.
+
 
 ## Test Results
 
