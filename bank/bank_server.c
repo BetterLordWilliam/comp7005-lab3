@@ -34,7 +34,7 @@ void bank_processing(bank_t* bank, const char* request, char* response) {
     } else if (strncmp(_BANK__DEPOSIT_MSG_PREFIX,
             request, strlen(_BANK__DEPOSIT_MSG_PREFIX)) == 0) {
 
-        if (sscanf(request, _BANK__DEPOSIT_MSG_PREFIX "  %d", &t) == 1) {
+        if (sscanf(request, _BANK__DEPOSIT_MSG_PREFIX " %d", &t) == 1) {
             bank->balance += t;
             sprintf(response, _BANK__REPLY_MSG_PREFIX " " _BANK__BALANCE_MSG_PREFIX " %d\n",
                 bank->balance);

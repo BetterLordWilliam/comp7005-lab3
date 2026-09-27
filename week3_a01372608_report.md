@@ -268,7 +268,7 @@ each as per the `_BANK__BUF_SIZE` macro.
 w/ interrupt error handling (this is the pattern for most syscall helpers in
 these programs, which for reference live in `common.c`). Flags are left as 
 default, so the socket is a blocking socket. The sockets file descriptor is written
-to the `sockfd` varialbes address.
+to the `sockfd` variables address.
 
 Then `setsockaddr_lb` is used to set the socket address to be the loopback
 IP w/ the specified port (which should be the server port).
@@ -286,7 +286,7 @@ After the event loop concludes in the normal case, the socket file descriptor is
 only if it was opened, & the buffers are freed.
 
 The error block also closes the socket, only if it was opened (ie it no longer
-has the initialized value of -1).
+has the initialized value of -1). `rbuf` & `wbuf` are freed as well.
 
 
 #### TCP Client event loop
@@ -455,7 +455,7 @@ error:
 ```
 
 Similar to the TCP client setup, but this time 2 file descriptors are declared,
-`sockfd` & `consockfd`. Unlike the client, the server binds the address & port
+`sockfd` & `consockfd`. Unlike the client, the server binds the loopback address & the port specified in `am` `appmode_t` pointer (which if you recall was initialized from the arguments)
 to `sockfd` via the `bindsock` helper, which takes care of `EINTR`. `rbuf` & `wbuf`
 names are reused for buffers that serve similar purposes, except this time contents
 are read into `rbuf` from the eventually client connected socket represented by
@@ -908,7 +908,7 @@ address saved in `caddr` via `sentdo_all`.
 
 If `bank_processing` determines that the message from the client was the 'QUIT'
 message, this is indicated in the `bank` struct `should_quit` field being set,
-if this is the case then the UDP server event loop is broken & the teardown
+if this is the case then the final reply is sent ('BYE' reply), the UDP server event loop is broken & the teardown
 procedure begins.
 
 
@@ -920,6 +920,7 @@ function.
 
 ![tcp-server-message-processing](./screenshots/tcp-server-message-processing.png)
 ```c
+/** 
  writes a response message.
     bank_t* bank pointer to bank struct (bank state)
     char* request
@@ -988,12 +989,10 @@ exceeds that which is in the bank. If so, then an error message is written to
 
 ## Test Results
 
-Here are the test results w/ the TCP & UDP versions of the program.
+Last but certainly not least, here are the test results w/ the TCP & UDP versions of the program.
 
 Results of TCP tests:
 ![tcpprototestresults](./screenshots/tcp-proto-test-results.png)
 
 Results of UDP tests:
 ![udpprototestresults](./screenshots/udp-proto-test-results.png)
-
-
