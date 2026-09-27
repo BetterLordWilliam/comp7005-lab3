@@ -8,7 +8,7 @@
 <p>This section describes how the programs (client &amp; server) were implemented
 for use with TCP protocol &amp; UDP protocol.</p>
 <h3 id="client-main">Client (main)</h3>
-<p><img src="./screenshots/client-main.c" alt="client-main" /></p>
+<p><img src="./screenshots/client-main.png" alt="client-main" /></p>
 <pre><code class="language-c">int main(int argc, char** argv)
 {
     int pport;
@@ -84,7 +84,7 @@ valid range of ports, defined as follows:</p>
 <p>If <code>mode.proto</code> is evaluated to be <code>TCP</code>, then <code>bank_client_tcp</code> is invoked.</p>
 <p>If <code>mode.proto</code> is evaluated to be <code>UDP</code>, then <code>bank_client_udp</code> is invoked.</p>
 <h3 id="server-main">Server (main)</h3>
-<p><img src="./screenshots/server-main.c" alt="server-main" /></p>
+<p><img src="./screenshots/server-main.png" alt="server-main" /></p>
 <pre><code class="language-c">int main(int argc, char** argv)
 {
     int pport;
@@ -159,7 +159,10 @@ set to 1000 &amp; the flag <code>should_quit</code> is zeroed (false).</p>
 <h3 id="tcp-client">TCP Client</h3>
 <p>The following sections describe the implementation of the TCP client.</p>
 <h4 id="tcp-client-setupteardown">TCP Client setup/teardown</h4>
-<p><img src="./screenshots/tcp-client-setup-error.png" alt="tcp-client-setup-error" /></p>
+<p><em>setup</em></p>
+<p><img src="./screenshots/tcp-client-setup-error-1.png" alt="tcp-client-setup-error" /></p>
+<p><em>teardown &amp; error handling</em></p>
+<p><img src="./screenshots/tcp-client-setup-error-2.png" alt="tcp-client-setup-error" /></p>
 <pre><code class="language-c">int bank_client_tcp(appmode_t* mode)
 {
     int sockfd = -1;
@@ -243,7 +246,7 @@ only if it was opened, &amp; the buffers are freed.</p>
 <p>The error block also closes the socket, only if it was opened (ie it no longer
 has the initialized value of -1). <code>rbuf</code> &amp; <code>wbuf</code> are freed as well.</p>
 <h4 id="tcp-client-event-loop">TCP Client event loop</h4>
-<p><img src="./screenshots/tcp-client-successful-poll-handling.png" alt="tcp-client-successful-poll-handling" /></p>
+<p><img src="./screenshots/tcp-client-event-loop.png" alt="tcp-client-successful-poll-handling" /></p>
 <pre><code class="language-c">int bank_client_tcp(appmode_t* mode)
 {
     // setup ...
@@ -328,7 +331,10 @@ then the client begins termination.</p>
 <h3 id="tcp-server">TCP Server</h3>
 <p>The following sections describe the implementation of the TCP server.</p>
 <h4 id="tcp-server-setupteardown">TCP Server setup/teardown</h4>
-<p><img src="./screenshots/tcp-server-setup-error.png" alt="tcp-server-setup-error" /></p>
+<p><em>setup</em></p>
+<p><img src="./screenshots/tcp-server-setup-error-1.png" alt="tcp-server-setup-error-1" /></p>
+<p><em>teardown &amp; error handling</em></p>
+<p><img src="./screenshots/tcp-client-setup-error-2.png" alt="tcp-server-setup-error-2" /></p>
 <pre><code class="language-c">/**
 bank server implementation with sock_stream (TCP) underlying protocol.
 */
@@ -402,7 +408,7 @@ if this fails.</p>
 <p>Error processing involves checking that <code>sockfd</code> &amp; <code>consockfd</code> were initialized,
 if they were then they are closed. The <code>rbuf</code> &amp; <code>wbuf</code> are freed.</p>
 <h4 id="tcp-server-event-loop">TCP Server event loop</h4>
-<p><img src="./screenshots/tcp-server-successful-poll-handling.png" alt="tcp-server-successful-poll-handling" /></p>
+<p><img src="./screenshots/tcp-server-event-loop.png" alt="tcp-server-successful-poll-handling" /></p>
 <pre><code class="language-c">/**
 bank server implementation with sock_stream (TCP) underlying protocol.
 */
@@ -508,7 +514,10 @@ loop is also broken leading to the TCP server teardown.</p>
 <h3 id="udp-client">UDP Client</h3>
 <p>The following sections describe the implementation of the UDP client.</p>
 <h4 id="udp-client-setupteardown">UDP Client setup/teardown</h4>
-<p><img src="./screenshots/udp-client-setup-error.png" alt="udp-client-setup-error" /></p>
+<p><em>setup</em></p>
+<p><img src="./screenshots/udp-client-setup-error-1.png" alt="udp-client-setup-error-1" /></p>
+<p><em>teardown &amp; error handling</em></p>
+<p><img src="./screenshots/udp-client-setup-error-2.png" alt="udp-client-setup-error-2" /></p>
 <pre><code class="language-c">int bank_client_udp(appmode_t* mode)
 {
     int sockfd = -1;
@@ -574,7 +583,7 @@ messages to come from.</p>
 <p>Regarding error handling &amp; teardown, if <code>sockfd</code> was opened, then it is closed &amp; the buffers
 <code>rbuf</code> &amp; <code>wbuf</code> are freed.</p>
 <h4 id="udp-client-event-loop">UDP Client event loop</h4>
-<p><img src="./screenshots/udp-client-successful-poll-handling.png" alt="udp-client-successful-poll-handling" /></p>
+<p><img src="./screenshots/udp-client-event-loop.png" alt="udp-client-successful-poll-handling" /></p>
 <pre><code class="language-c">int bank_client_udp(appmode_t* mode)
 {
     // setup ...
@@ -658,7 +667,10 @@ teardown begins).</p>
 <h3 id="udp-server">UDP Server</h3>
 <p>The following sections describe the implementation of the UDP server.</p>
 <h4 id="udp-server-setupteardown">UDP Server setup/teardown</h4>
-<p><img src="./screenshots/udp-server-setup-error.png" alt="udp-server-setup-error" /></p>
+<p><em>setup</em></p>
+<p><img src="./screenshots/udp-server-setup-error-1.png" alt="udp-setup-1" /></p>
+<p><em>teardown &amp; error handling</em></p>
+<p><img src="./screenshots/udp-server-setup-error-2.png" alt="udp-setup-2" /></p>
 <pre><code class="language-c">/**
 bank server implementation with sock_dgram (UDP) underlying protocol.
 */
@@ -729,7 +741,7 @@ writing processed response messages to.</p>
 <p>If an error is detected during setup, the error processing involves closing
 the <code>sockfd</code> if it was opened &amp; freeing the <code>rbuf</code> &amp; <code>wbuf</code> buffers.</p>
 <h4 id="udp-server-event-loop">UDP Server event loop</h4>
-<p><img src="./screenshots/udp-server-successful-poll-handling.png" alt="udp-server-successful-poll-handling" /></p>
+<p><img src="./screenshots/udp-server-event-loop.png" alt="udp-server-successful-poll-handling" /></p>
 <pre><code class="language-c">/**
 bank server implementation with sock_dgram (UDP) underlying protocol.
 */
@@ -809,9 +821,10 @@ procedure begins.</p>
 <p>Once the <code>rbuf</code> is populated, either protocol must process messages in the same way
 &amp; write replies in the same way to <code>wbuf</code>, so this is abstracted to the <code>bank_processing</code>
 function.</p>
-<p><img src="./screenshots/tcp-server-message-processing.png" alt="tcp-server-message-processing" /></p>
-<pre><code class="language-c">/** 
- writes a response message.
+<p><img src="./screenshots/server-processing.png" alt="tcp-server-message-processing" /></p>
+<pre><code class="language-c">/**
+Takes message from the client &amp; processes the request
+&amp; writes a response message.
     bank_t* bank pointer to bank struct (bank state)
     char* request
     char* response

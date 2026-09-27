@@ -10,6 +10,43 @@ This report describes my implementation of the week3 bank server lab.
 
 This section describes how to compile the project.
 
+There are two relevant [makefile](./makefile) recipes, `build` & `clean`
+
+```bash
+make build
+```
+
+> This will create the binary in a `./build` directory
+
+```bash
+make clean
+```
+
+> This will remove the current contents of the `./build` directory
+
+> You can ignore the `run-both` recipe I was experimenting w/ stuff.
+
+The output binaries are `./build/bank-server` & `./build/bank-client` respectively & should be started as follows:
+
+*TCP examples*
+
+```bash
+./build/bank-server tcp 1234
+
+# or background
+./build/bank-server tcp 1234 &
+./build/bank-client tcp 1234
+```
+
+*UDP examples*
+
+```bash
+./build/bank-server udp 1234
+
+# or background
+./build/bank-server udp 1234
+./build/bank-client udp 1234
+```
 
 ## Implementation
 

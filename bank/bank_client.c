@@ -252,6 +252,7 @@ int main(int argc, char** argv)
     // be strict, reject more or less
     if (argc != 3) {
         printf("%s incorrect number of arguments\n", MESSAGE_PREFIX);
+        printf("%s", _BANK__USAGE_MSG);
         goto error;
     }
     // arg1 protocol type
@@ -261,6 +262,7 @@ int main(int argc, char** argv)
         mode.proto = UDP;
     } else {
         printf("%s unknown protocol\n", MESSAGE_PREFIX);
+        printf("%s", _BANK__USAGE_MSG);
         goto error;
     }
     // arg2 port
@@ -268,6 +270,7 @@ int main(int argc, char** argv)
         mode.port = pport;
     } else {
         printf("%s failed to parse port to integer\n", MESSAGE_PREFIX);
+        printf("%s", _BANK__USAGE_MSG);
         goto error;
     }
     

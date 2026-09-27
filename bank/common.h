@@ -27,6 +27,8 @@
 #define _BANK__WITHDRAW_MSG_PREFIX "WITHDRAW"
 #define _BANK__QUIT_MSG "QUIT"
 
+#define _BANK__USAGE_MSG "usage: bank-server <tcp|udp> <port>\n"
+
 
 enum protocol {
     TCP,
